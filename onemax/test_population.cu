@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <thrust/random.h>
+#include <thrust/generate.h>
+
 #define POPSIZE 512
 #define CHROMOSOME 512
 
@@ -50,6 +53,27 @@ __global__ void reduction(int *idata, int *odata)
     }
 }
 
+int my_rand(void)
+{
+    static thrust::default_random_engine rng;
+    static thrust::uniform_int_distribution<int> dist(0, 1);
+
+    return dist(rng);
+}
+
+void init_thrust(int *idata)
+{
+    thrust::generate(idata, idata + N, my_rand);
+
+#ifdef _DEBUG
+    for (int i=0; i<N; ++i)
+    {
+        std::cout << idata[i] << ",";
+    }
+    std::cout << std::endl;
+#endif // _DEBUG
+}
+
 void init(int *idata)
 {
     int i;
@@ -72,7 +96,8 @@ int main()
 
     // CPU側でデータを初期化してGPUへコピー
     host_idata = (int *)malloc(Nbytes);
-    init(host_idata);
+    init_thrust(host_idata);
+    // init(host_idata);
     cudaMemcpy(idata, host_idata, Nbytes, cudaMemcpyHostToDevice);
     free(host_idata);
 
@@ -93,9 +118,14 @@ int main()
     {
         printf("%d\n", sum[i]);
     }
+
+#ifdef _DEBUG
     printf("\n%d, %d, %d\n", N, NT, NB);
+#endif // _DEBUG
+
     // printf("sum = %d\n", sum);
     cudaFree(idata);
     cudaFree(odata);
+
     return 0;
 }
