@@ -8,7 +8,7 @@ NVCC_OPTIONS = -arch=sm_86
 GNUOPENMP = -fopenmp
 INTELOPEMP = -openmp
 
-APPS = population test_population
+APPS = population test_population curand curand_kernel
 
 TARGET = ${APPS}
 
@@ -23,6 +23,12 @@ test_population : test_population.cu
 
 individual.o: individual.cu individual.hpp
 	$(NVCC) $(NVCC_OPTIONS) -o $@ -c $<
+
+curand : curand.cu
+	$(NVCC) $(NVCC_OPTIONS) -lcurand $^ -o $@
+
+curand_kernel : curand_kernel.cu
+	$(NVCC) $(NVCC_OPTIONS) -lcurand $^ -o $@
 
 parameters.o: parameters.cu parameters.hpp
 	$(NVCC) $(NVCC_OPTIONS) -o $@ -c $<
