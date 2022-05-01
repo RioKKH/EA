@@ -3,6 +3,7 @@
 #include <bitset>
 
 #include <curand.h>
+#include <curand_kernel.h>
 #include <thrust/random.h>
 #include <thrust/generate.h>
 #include <thrust/host_vector.h>
@@ -12,6 +13,9 @@
 #define POPSIZE 512
 #define CHROMOSOME 512
 #define NUM_OF_GENERATIONS 100
+#define MUTATION_RATE 0.05
+#define TOURNAMENT_SIZE 5
+#define ELITISM true
 
 #define N (POPSIZE * CHROMOSOME)
 #define Nbytes (N*sizeof(int))
@@ -68,23 +72,38 @@ __global__ void reduction(int *idata, int *odata)
     }
 }
 
-__device__ int tournamentSelection()
-{
-}
-
 __host__ __device__ int getBest()
 {
 	return 0;
 }
 
-__global__ void evaluation(int *idata, int *odata)
+__global__ void setup_kernel(curandState *state)
+{
+	int id = threadIdx.x + blockIdx.x * blockDim.x;
+	curand_init(1234, id, 0, &state[id]);
+}
+
+__global__ void generate_kernel(curandState *state, float *result)
+{
+	int id = threadIdx.x + blockIdx.x * blockDim.x;
+	float x;
+
+	curandState localState = state[id];
+	
+	x = curand_uniform(&localState);
+
+	state[id] = localState;
+	result[id] = x;
+}
+
+__global__ void evaluation(int *population, int *fitness)
 {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	int tx = threadIdx.x;
 	int stride;
 
 	extern __shared__ volatile int s_idata[];
-	s_idata[tx] = idata[i];
+	s_idata[tx] = population[i];
 	__syncthreads();
 
 	for (stride = 1; stride <= blockDim.x/2; stride <<= 1)
@@ -98,12 +117,28 @@ __global__ void evaluation(int *idata, int *odata)
 
 	if (tx == 0)
 	{
-		odata[blockIdx.x] = s_idata[0];
+		fitness[blockIdx.x] = s_idata[0];
 	}
 }
 
-__global__ void selection()
+__device__ int tournamentSelection(int &population, curandState *dev_States, const int &id)
 {
+	int tournament[TOURNAMENT_SIZE];
+	int randNum;
+	for (int i = 0; i < TOURNAMENT_SIZE; ++i)
+	{
+		curandState localState = dev_States[id];
+		randNum = curand_uniform(&localState) * (N -1);
+		tournament[i] = population
+	}
+}
+
+
+__global__ void selection(int* population, curandState *dev_States, int* parents)
+{
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	parents[i * 2] = tournamentSelection(*population, dev_States, i);
+	parents[i * 2 + 1] = tournamentSelection(*population, dev_States, i);
 }
 
 __global__ void crossover()
@@ -122,9 +157,9 @@ int my_rand(void)
     return dist(rng);
 }
 
-void initializePopulationOnCPU(int *idata)
+void initializePopulationOnCPU(int *population)
 {
-    thrust::generate(idata, idata + N, my_rand);
+    thrust::generate(population, population + N, my_rand);
 
 #ifdef _DEBUG
     for (int i=0; i<POPSIZE; ++i)
@@ -141,43 +176,56 @@ void initializePopulationOnCPU(int *idata)
 int main()
 {
     // GPU用変数 idata: 入力、odata: 出力(総和)
-    int *idata, *odata;
-	thrust::device_vector<int> d_indivFitnesses(POPSIZE);
-	thrust::device_vector<int> d_indivRanks(POPSIZE);
-	int *pd_indivFitness = thrust::raw_pointer_cast(&d_indivFitnesses[0]);
-	int *pd_indivRanks = thrust::raw_pointer_cast(&d_indivRanks[0]);
-	thrust::sequence(d_indivRanks.begin(), d_indivRanks.end());
+    int *pdev_Population;
+	thrust::device_vector<int> dev_Fitnesses(POPSIZE);
+	thrust::device_vector<int> dev_Ranks(POPSIZE);
+
+	int *pdev_Fitness = thrust::raw_pointer_cast(&dev_Fitnesses[0]);
+	int *pdev_Ranks = thrust::raw_pointer_cast(&dev_Ranks[0]);
+	thrust::sequence(dev_Ranks.begin(), dev_Ranks.end());
+
+    cudaMalloc((void **)&pdev_Population, Nbytes);
 
     // CPU用変数
-    int *host_idata;
-	int *ph_indivFitness;
-	int *ph_indivRanks;
+    int *phost_Population;
+	int *phost_Fitness;
+	int *phost_Ranks;
 
-    ph_indivFitness = (int *)malloc(NB * sizeof(int));
-	ph_indivRanks = (int *)malloc(NB * sizeof(int));
+    phost_Fitness = (int *)malloc(NB * sizeof(int));
+	phost_Ranks = (int *)malloc(NB * sizeof(int));
 
-
-    cudaMalloc((void **)&idata, Nbytes);
-    cudaMalloc((void **)&odata, NB*sizeof(int)); // ブロックの数だけ部分和が出るので
+	// 乱数用変数
+	curandState *dev_States;
+	cudaMalloc((void **)&dev_States, NB * sizeof(curandState));
+	// cudaMalloc((void **)&dev_States, POPSIZE * sizeof(curandState));
+	cudaDeviceSynchronize();
 
     // CPU側でデータを初期化してGPUへコピー
-    host_idata = (int *)malloc(Nbytes);
-    initializePopulationOnCPU(host_idata);
-    cudaMemcpy(idata, host_idata, Nbytes, cudaMemcpyHostToDevice);
+    phost_Population = (int *)malloc(Nbytes);
+    initializePopulationOnCPU(phost_Population);
+    cudaMemcpy(pdev_Population, phost_Population, Nbytes, cudaMemcpyHostToDevice);
 
-    // 共有メモリサイズを指定
-	evaluation<<<NB, NT, NT*sizeof(int)>>>(idata, pd_indivFitness);
+	// --------------------------------
+	// Main loop
+	// --------------------------------
+
+	// initialize random numbers array for tournament selection
+	// 乱数はトーナメントセレクションで用いられるので、個体の数だけあれば良い
+	setup_kernel<<<NB, 1>>>(dev_States);
+	cudaDeviceSynchronize();
+
+	evaluation<<<NB, NT, NT*sizeof(int)>>>(pdev_Population, pdev_Fitness);
 
 	for (int i = 0; i < NUM_OF_GENERATIONS; ++i)
 	{
-		selection<<<NB, NT, NT*sizeof(int)>>>();
-		crossover<<<NB, NT>>>();
-		mutation<<<NB, NT>>>();
-		evaluation<<<NB, NT, NT*sizeof(int)>>>(idata, pd_indivFitness);
+		// selection<<<NB, NT, NT*sizeof(int)>>>();
+		// crossover<<<NB, NT>>>();
+		// mutation<<<NB, NT>>>();
+		// evaluation<<<NB, NT, NT*sizeof(int)>>>(pdev_Population, pdev_Fitness);
 	}
 
-    cudaMemcpy(ph_indivFitness, pd_indivFitness, NB * sizeof(int), cudaMemcpyDeviceToHost);
-	cudaMemcpy(ph_indivRanks, pd_indivRanks, POPSIZE * sizeof(int), cudaMemcpyHostToHost);
+    // cudaMemcpy(phost_Fitness, pdev_Fitness, NB * sizeof(int), cudaMemcpyDeviceToHost);
+	// cudaMemcpy(phost_Ranks, pdev_Ranks, POPSIZE * sizeof(int), cudaMemcpyHostToHost);
 
 #ifdef _DEBUG
     for (int i=0; i < POPSIZE; ++i)
@@ -192,12 +240,13 @@ int main()
 #endif // _DEBUG
 
     // printf("sum = %d\n", sum);
-    cudaFree(idata);
-    cudaFree(odata);
+    // cudaFree(pdev_Population);
+    // cudaFree(pdev_Fitness); thrust
+	// cudaFree(pdev_Ranks); thrust
 
-    free(host_idata);
-	free(ph_indivFitness);
-	free(ph_indivRanks);
+    // free(phost_Population);
+	// free(phost_Fitness);
+	// free(phost_Ranks);
 
     return 0;
 }
