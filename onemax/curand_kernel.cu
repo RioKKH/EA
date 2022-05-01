@@ -11,7 +11,7 @@ __global__ void random(float *value)
 	curandState stat;
 
 	// 乱数のシード
-    seed = 1;
+    seed = 1234;
 	// 第1引数は乱数のシード。全スレッドで同じ値を用いる
 	// 第2引数はシーケンス番号。スレッド番号など、全スレッドで異なる値
 	curand_init(seed, i, 0, &stat);

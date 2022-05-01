@@ -1,11 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <bitset>
 
+#include <curand.h>
 #include <thrust/random.h>
 #include <thrust/generate.h>
+#include <thrust/host_vector.h>
+#include <thrust/device_vector.h>
+#include <thrust/device_ptr.h>
 
 #define POPSIZE 512
 #define CHROMOSOME 512
+#define NUM_OF_GENERATIONS 100
 
 #define N (POPSIZE * CHROMOSOME)
 #define Nbytes (N*sizeof(int))
@@ -13,6 +19,15 @@
 #define NB POPSIZE
 // #define NT (256)
 // #define NB (N / NT) // 1より大きくなる
+
+#define CUDA_CALL(x) do { if((x) != cudaSuccess) {  \
+	printf("Error at %s:%d\n", __FILE__, __LINE__); \
+	return EXIT_FAILURE;}} while (0)
+
+#define CURAND_CALL(x) do { if((x) != CURAND_STATUS_SUCCESS) {  \
+	printf("Error at %s:%d\n", __FILE__, __LINE__); \
+	return EXIT_FAILURE;}} while (0)
+
 
 __global__ void reduction(int *idata, int *odata)
 {
@@ -31,7 +46,7 @@ __global__ void reduction(int *idata, int *odata)
     extern __shared__ volatile int s_idata[]; // 共有メモリの宣言
 
     s_idata[tx] = idata[i]; // グローバルメモリから共有メモリへデータをコピー
-    __syncthreads; // 共有メモリのデータは全スレッドから参照されるので同期を取る
+    __syncthreads(); // 共有メモリのデータは全スレッドから参照されるので同期を取る
     
     // ストライドを2倍し、ストライドがN/2以下ならループを継続
     // <<= : シフト演算の代入演算子 a <<= 1 --> a = a << 1と同じ
@@ -53,6 +68,52 @@ __global__ void reduction(int *idata, int *odata)
     }
 }
 
+__device__ int tournamentSelection()
+{
+}
+
+__host__ __device__ int getBest()
+{
+	return 0;
+}
+
+__global__ void evaluation(int *idata, int *odata)
+{
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	int tx = threadIdx.x;
+	int stride;
+
+	extern __shared__ volatile int s_idata[];
+	s_idata[tx] = idata[i];
+	__syncthreads();
+
+	for (stride = 1; stride <= blockDim.x/2; stride <<= 1)
+	{
+		if (tx % (2 * stride) == 0)
+		{
+			s_idata[tx] = s_idata[tx] + s_idata[tx + stride];
+		}
+		__syncthreads();
+	}
+
+	if (tx == 0)
+	{
+		odata[blockIdx.x] = s_idata[0];
+	}
+}
+
+__global__ void selection()
+{
+}
+
+__global__ void crossover()
+{
+}
+
+__global__ void mutation()
+{
+}
+
 int my_rand(void)
 {
     static thrust::default_random_engine rng;
@@ -61,71 +122,82 @@ int my_rand(void)
     return dist(rng);
 }
 
-void init_thrust(int *idata)
+void initializePopulationOnCPU(int *idata)
 {
     thrust::generate(idata, idata + N, my_rand);
 
 #ifdef _DEBUG
-    for (int i=0; i<N; ++i)
-    {
-        std::cout << idata[i] << ",";
-    }
-    std::cout << std::endl;
+    for (int i=0; i<POPSIZE; ++i)
+	{
+		for (int j=0; j<CHROMOSOME; ++j)
+		{
+			std::cout << idata[i * POPSIZE + j];
+		}
+		std::cout << std::endl;
+	}
 #endif // _DEBUG
-}
-
-void init(int *idata)
-{
-    int i;
-    for (i=0; i<N; ++i)
-    {
-        idata[i] = 1;
-    }
 }
 
 int main()
 {
     // GPU用変数 idata: 入力、odata: 出力(総和)
     int *idata, *odata;
+	thrust::device_vector<int> d_indivFitnesses(POPSIZE);
+	thrust::device_vector<int> d_indivRanks(POPSIZE);
+	int *pd_indivFitness = thrust::raw_pointer_cast(&d_indivFitnesses[0]);
+	int *pd_indivRanks = thrust::raw_pointer_cast(&d_indivRanks[0]);
+	thrust::sequence(d_indivRanks.begin(), d_indivRanks.end());
 
-    // CPU用変数 host_idata: 初期化用、sum: 総和
-    int *host_idata, *sum;
+    // CPU用変数
+    int *host_idata;
+	int *ph_indivFitness;
+	int *ph_indivRanks;
+
+    ph_indivFitness = (int *)malloc(NB * sizeof(int));
+	ph_indivRanks = (int *)malloc(NB * sizeof(int));
+
 
     cudaMalloc((void **)&idata, Nbytes);
     cudaMalloc((void **)&odata, NB*sizeof(int)); // ブロックの数だけ部分和が出るので
 
     // CPU側でデータを初期化してGPUへコピー
     host_idata = (int *)malloc(Nbytes);
-    init_thrust(host_idata);
-    // init(host_idata);
+    initializePopulationOnCPU(host_idata);
     cudaMemcpy(idata, host_idata, Nbytes, cudaMemcpyHostToDevice);
-    free(host_idata);
 
-    // 各ブロックで部分和を計算。iが入力、oが出力
     // 共有メモリサイズを指定
-    reduction<<<NB, NT, NT*sizeof(int)>>>(idata, odata);
-    // if (NB > 1)
-    // {
-    //     // 共有メモリサイズを指定
-    //     reduction<<<1, NB, NB*sizeof(int)>>>(odata, odata); // 部分和から総和を計算。oが入出力
-    // }
+	evaluation<<<NB, NT, NT*sizeof(int)>>>(idata, pd_indivFitness);
 
-    sum = (int *)malloc(NB * sizeof(int));
+	for (int i = 0; i < NUM_OF_GENERATIONS; ++i)
+	{
+		selection<<<NB, NT, NT*sizeof(int)>>>();
+		crossover<<<NB, NT>>>();
+		mutation<<<NB, NT>>>();
+		evaluation<<<NB, NT, NT*sizeof(int)>>>(idata, pd_indivFitness);
+	}
 
-    cudaMemcpy(sum, odata, NB * sizeof(int), cudaMemcpyDeviceToHost);
-
-    for (int i = 0; i < NB; ++i)
-    {
-        printf("%d\n", sum[i]);
-    }
+    cudaMemcpy(ph_indivFitness, pd_indivFitness, NB * sizeof(int), cudaMemcpyDeviceToHost);
+	cudaMemcpy(ph_indivRanks, pd_indivRanks, POPSIZE * sizeof(int), cudaMemcpyHostToHost);
 
 #ifdef _DEBUG
-    printf("\n%d, %d, %d\n", N, NT, NB);
+    for (int i=0; i < POPSIZE; ++i)
+	{
+		std::cout << ph_indivRanks[i] << ":" << ph_indivFitness[i] << ",";
+		if (i % 8 == 0)
+		{
+			std::cout << std::endl;
+		}
+	}
+    // printf("\n%d, %d, %d\n", N, NT, NB);
 #endif // _DEBUG
 
     // printf("sum = %d\n", sum);
     cudaFree(idata);
     cudaFree(odata);
+
+    free(host_idata);
+	free(ph_indivFitness);
+	free(ph_indivRanks);
 
     return 0;
 }
