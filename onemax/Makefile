@@ -2,16 +2,17 @@ CC = gcc
 CPP = g++
 NVCC = nvcc
 GCC_OPTIONS = -Wall --pedantic-error
-GPP_OPTIONS = -std=c++17 -Wall --pedantic-error
+GPP_OPTIONS = -std=c++17 -Wall --pedantic-error -D_DEBUG
 #NVCC_OPTIONS = -arch=sm_50
-NVCC_OPTIONS = -arch=sm_86
+NVCC_OPTIONS = -arch=sm_86 -D_DEBUG
 
 GNUOPENMP = -fopenmp
 INTELOPEMP = -openmp
 
-APPS = population test_population curand curand_kernel curand_kernel2\
-			 curand_kernel4 curand_kernel5 curand_kernel6 curand_kernel7\
-			 curand_kernel8
+APPS = population curand curand_kernel curand_kernel2\
+       curand_kernel4 curand_kernel5 curand_kernel6\
+       curand_kernel7 curand_kernel8\
+       onemax
 
 TARGET = ${APPS}
 
@@ -49,16 +50,19 @@ curand_kernel7 : curand_kernel7.cu
 	$(NVCC) $(NVCC_OPTIONS) -lcurand $^ -o $@
 
 curand_kernel8 : curand_kernel8.cu
-	$(NVCC) $(NVCC_OPTIONS) -lcurand $^ -o $@
+	$(NVCC) $(NVCC_OPTIONS) -D_DEBUG -lcurand $^ -o $@
 
 parameters.o: parameters.cu parameters.hpp
 	$(NVCC) $(NVCC_OPTIONS) -o $@ -c $<
 
-onemax.o: onemax.cu
-	$(NVCC) $(NVCC_OPTIONS) -o $@ -c $<
+onemax : onemax.cu
+	$(NVCC) $(NVCC_OPTIONS) $^ -o $@
 
-onemax: onemax.o individual.o parameters.o
-	$(NVCC) $(NVCC_OPTIONS) -o $@ $+
+#onemax.o: onemax.cu
+#	$(NVCC) $(NVCC_OPTIONS) -o $@ -c $<
+#
+#onemax: onemax.o individual.o parameters.o
+#	$(NVCC) $(NVCC_OPTIONS) -o $@ $+
 
 run: build
 
