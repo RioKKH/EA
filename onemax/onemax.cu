@@ -10,11 +10,13 @@
 #include <thrust/device_vector.h>
 #include <thrust/device_ptr.h>
 
-#define POPSIZE 512
-#define CHROMOSOME 512
+#define POPSIZE 8
+#define CHROMOSOME 16
+// #define POPSIZE 512
+// #define CHROMOSOME 512
 #define NUM_OF_GENERATIONS 100
 #define MUTATION_RATE 0.05
-#define TOURNAMENT_SIZE 5
+#define TOURNAMENT_SIZE 1
 #define ELITISM true
 
 #define N (POPSIZE * CHROMOSOME)
@@ -160,8 +162,9 @@ __device__ int tournamentSelection(const int *fitness, curandState *dev_States, 
 	for (int i = 0; i < TOURNAMENT_SIZE; ++i)
 	{
 		// curand_uniform returns random number uniformly distributed between (0, 1].
-		printf("--- id: %d ---\n", id * TOURNAMENT_SIZE + i +offset);
-		curandState localState = dev_States[id * TOURNAMENT_SIZE + i + offset];
+		// printf("--- id: %d ---\n", id * TOURNAMENT_SIZE + i +offset);
+		curandState localState = dev_States[id + i + offset];
+		// curandState localState = dev_States[id * TOURNAMENT_SIZE + i + offset];
 		random_id = (unsigned int)(curand_uniform(&localState) * (POPSIZE-1));
 		tournament_individuals[i] = random_id;
 		tournament_fitness[i] = fitness[random_id];
@@ -184,11 +187,13 @@ __device__ int tournamentSelection(const int *fitness, curandState *dev_States, 
 __global__ void selection(int* fitness, curandState *dev_States,
 		int* parent1, int* parent2)
 {
-	int id = blockIdx.x * blockDim.x + threadIdx.x;
+	int bx = blockIdx.x * blockDim.x;
+	// int tx = threadIdx.x;
+	// int id = blockIdx.x * blockDim.x + threadIdx.x;
 	//if (id >= POPSIZE) return;
 
-	parent1[id] = tournamentSelection(fitness, dev_States, id, MALE);
-	parent2[id] = tournamentSelection(fitness, dev_States, id, FEMALE);
+	parent1[bx] = tournamentSelection(fitness, dev_States, bx, MALE);
+	parent2[bx] = tournamentSelection(fitness, dev_States, bx, FEMALE);
 }
 
 __global__ void crossover()
@@ -276,7 +281,8 @@ int main()
 	cudaDeviceSynchronize();
 
 	evaluation<<<NB, NT, NT*sizeof(int)>>>(pdev_Population, pdev_Fitness);
-	selection<<<POPSIZE, TOURNAMENT_SIZE>>>(pdev_Fitness, dev_States, pdev_Parent1, pdev_Parent2);
+	selection<<<POPSIZE, 1>>>(pdev_Fitness, dev_States, pdev_Parent1, pdev_Parent2);
+	// selection<<<POPSIZE, TOURNAMENT_SIZE>>>(pdev_Fitness, dev_States, pdev_Parent1, pdev_Parent2);
 
 	for (int i = 0; i < NUM_OF_GENERATIONS; ++i)
 	{
