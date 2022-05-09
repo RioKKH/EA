@@ -23,7 +23,7 @@
 #define CHROMOSOME 8
 // #define CHROMOSOME 512
 
-#define NUM_OF_GENERATIONS 5 
+#define NUM_OF_GENERATIONS 10 
 #define MUTATION_RATE 0.05
 #define TOURNAMENT_SIZE 3
 #define NUM_OF_CROSSOVER_POINTS 1
@@ -31,8 +31,8 @@
 
 #define N (POPSIZE * CHROMOSOME)
 #define Nbytes (N*sizeof(int))
-#define NT CHROMOSOME
-#define NB POPSIZE
+// #define NT CHROMOSOME
+// #define NB POPSIZE
 // #define NT (256)
 // #define NB (N / NT) // 1より大きくなる
 
@@ -51,8 +51,7 @@ enum PARENTS {
 } while (0)													\
 
 #define CURAND_CALL(x) do									\
-{                                                           \
-	if((x) != CURAND_STATUS_SUCCESS)                        \
+{                                                           \ if((x) != CURAND_STATUS_SUCCESS)                        \
 	{                                                       \
 		printf("Error at %s:%d\n", __FILE__, __LINE__);		\
 		return EXIT_FAILURE;                                \
@@ -202,8 +201,15 @@ __global__ void crossover(
 	__syncthreads();
 }
 
-__global__ void mutation()
+__global__ void mutation(int *population, curandState *dev_States, const int gen)
 {
+	int id = blockIdx.x * blockDim.x + threadIdx.x;
+	curandState localState = dev_States[id + POPSIZE * gen];
+
+	if (curand_uniform(&localState) < MUTATION_RATE)
+	{
+		population[id] ^= 1;
+	}
 }
 
 int my_rand(void)
@@ -259,8 +265,8 @@ int main()
 
     cudaMalloc((void **)&pdev_PopulationOdd, Nbytes);
     cudaMalloc((void **)&pdev_PopulationEven, Nbytes);
-    cudaMalloc((void **)&pdev_Parent1, NB * sizeof(int));
-    cudaMalloc((void **)&pdev_Parent2, NB * sizeof(int));
+    cudaMalloc((void **)&pdev_Parent1, POPSIZE * sizeof(int));
+    cudaMalloc((void **)&pdev_Parent2, POPSIZE * sizeof(int));
 
     //- CPU用変数 ---------------------------------------------------------------------------------
     int *phost_Population;
@@ -306,8 +312,13 @@ int main()
 	setup_kernel<<<POPSIZE * NUM_OF_GENERATIONS, NUM_OF_CROSSOVER_POINTS>>>(dev_CrossoverStates);
 	cudaDeviceSynchronize();
 
-	evaluation<<<NB, NT, NT*sizeof(int)>>>(pdev_PopulationEven, pdev_Fitness);
+	setup_kernel<<<POPSIZE * NUM_OF_GENERATIONS, CHROMOSOME>>>(dev_MutationStates);
 	cudaDeviceSynchronize();
+
+	evaluation<<<POPSIZE, CHROMOSOME, CHROMOSOME*sizeof(int)>>>(pdev_PopulationEven, pdev_Fitness);
+	cudaDeviceSynchronize();
+
+	// mutation<<<POPSIZE, CHROMOSOME>>>(pdev_PopulationEven, dev_MutationStates, 0);
 
 	for (int gen = 0; gen < NUM_OF_GENERATIONS; ++gen)
 	{
@@ -332,7 +343,10 @@ int main()
 					gen);
 			cudaDeviceSynchronize();
 
-			evaluation<<<NB, NT, NT*sizeof(int)>>>(pdev_PopulationOdd, pdev_Fitness);
+			mutation<<<POPSIZE, CHROMOSOME>>>(pdev_PopulationOdd, dev_MutationStates, gen);
+			cudaDeviceSynchronize();
+
+			evaluation<<<POPSIZE, CHROMOSOME, CHROMOSOME*sizeof(int)>>>(pdev_PopulationOdd, pdev_Fitness);
 			cudaDeviceSynchronize();
 		}
 		else // Odd
@@ -346,7 +360,10 @@ int main()
 					gen);
 			cudaDeviceSynchronize();
 
-			evaluation<<<NB, NT, NT*sizeof(int)>>>(pdev_PopulationEven, pdev_Fitness);
+			mutation<<<POPSIZE, CHROMOSOME>>>(pdev_PopulationEven, dev_MutationStates, gen);
+			cudaDeviceSynchronize();
+
+			evaluation<<<POPSIZE, CHROMOSOME, CHROMOSOME*sizeof(int)>>>(pdev_PopulationEven, pdev_Fitness);
 			cudaDeviceSynchronize();
 		}
 #ifdef _DEBUG
