@@ -283,6 +283,10 @@ int main()
 	cudaMalloc((void **)&dev_CrossoverStates, POPSIZE * NUM_OF_CROSSOVER_POINTS * NUM_OF_GENERATIONS * sizeof(curandState));
 	cudaDeviceSynchronize();
 
+	curandState *dev_MutationStates;
+	cudaMalloc((void **)&dev_MutationStates, POPSIZE * CHROMOSOME * NUM_OF_GENERATIONS * sizeof(curandState));
+	cudaDeviceSynchronize();
+
 	//- Preparation -------------------------------------------------------------------------------
 
     // CPU側でデータを初期化してGPUへコピー
