@@ -14,13 +14,13 @@
   * @def POPSIZE
   * @brief Size of the population
   */
-#define POPSIZE 16
+#define POPSIZE 8
 // #define POPSIZE 512
 
 /** @def CHROMOSOME
   * @brief Size of the chromosome
   */
-#define CHROMOSOME 16
+#define CHROMOSOME 8
 // #define CHROMOSOME 512
 
 #define NUM_OF_GENERATIONS 20 
