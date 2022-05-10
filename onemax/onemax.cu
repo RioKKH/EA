@@ -14,20 +14,20 @@
   * @def POPSIZE
   * @brief Size of the population
   */
-#define POPSIZE 8
+#define POPSIZE 16
 // #define POPSIZE 512
 
 /** @def CHROMOSOME
   * @brief Size of the chromosome
   */
-#define CHROMOSOME 8
+#define CHROMOSOME 16
 // #define CHROMOSOME 512
 
-#define NUM_OF_GENERATIONS 10 
-#define MUTATION_RATE 0.05
+#define NUM_OF_GENERATIONS 20 
+#define NUM_OF_ELITE 4
 #define TOURNAMENT_SIZE 3
 #define NUM_OF_CROSSOVER_POINTS 1
-#define ELITISM true
+#define MUTATION_RATE 0.05
 
 #define N (POPSIZE * CHROMOSOME)
 #define Nbytes (N*sizeof(int))
@@ -51,18 +51,14 @@ enum PARENTS {
 } while (0)													\
 
 #define CURAND_CALL(x) do									\
-{                                                           \ if((x) != CURAND_STATUS_SUCCESS)                        \
+{                                                           \
+	if((x) != CURAND_STATUS_SUCCESS)                        \
 	{                                                       \
 		printf("Error at %s:%d\n", __FILE__, __LINE__);		\
 		return EXIT_FAILURE;                                \
 	}                                                       \
 } while (0)                                                 \
 
-
-__host__ __device__ int getBest()
-{
-	return 0;
-}
 
 __global__ void setup_kernel(curandState *state)
 {
@@ -142,28 +138,38 @@ __device__ int tournamentSelection(const int *fitness, curandState *dev_States, 
 		tournament_fitness[i] = fitness[random_id];
 
 	}
+	// TODO 恐らくtounamentSelection
+	// がElitismに対応していない。具体的にはsortedidに対応していないことが、バグの原因になっている
 	best_id = getBestIndividual(tournament_fitness);
 
 	return tournament_individuals[best_id];
 }
 
-
-__global__ void selection(int* fitness, curandState *dev_States, int* parent1, int* parent2, int gen)
+__global__ void selection(int* fitness, int* sortedid, curandState *dev_States, int* parent1, int* parent2, int gen)
 {
 	int tx = threadIdx.x;
 
-	// printf("tx:%d\n", tx);
-	parent1[tx] = tournamentSelection(fitness, dev_States, tx, MALE, gen);
-	parent2[tx] = tournamentSelection(fitness, dev_States, tx, FEMALE, gen);
+	if (POPSIZE - NUM_OF_ELITE <= tx)
+	{
+		parent1[tx] = sortedid[tx];
+		parent2[tx] = sortedid[tx];
+	}
+	else
+	{
+		parent1[tx] = tournamentSelection(fitness, dev_States, tx, MALE, gen);
+		parent2[tx] = tournamentSelection(fitness, dev_States, tx, FEMALE, gen);
+	}
+	// printf("%d,%d,%d,%d\n", tx, fitness[tx], parent1[tx], parent2[tx]);
 }
 
 __device__ void singlepointCrossover(const int *src, int *dst, int tx, curandState localState, int parent1, int parent2) 
-{
+{ 
 	int i = 0;
 	unsigned int point1;
 	int offset = tx * CHROMOSOME;
 
-	point1 = (unsigned int)(curand_uniform(&localState) * (POPSIZE));
+	point1 = (unsigned int)(curand_uniform(&localState) * (CHROMOSOME));
+	// point1 = (unsigned int)(curand_uniform(&localState) * (POPSIZE));
 	for (i = 0; i < point1; ++i)
 	{
 		dst[i + offset] = src[parent1 * CHROMOSOME + i];
@@ -182,9 +188,11 @@ __device__ void singlepointCrossover(const int *src, int *dst, int tx, curandSta
  * @return void
  */
 __global__ void crossover(
-		const int *src, int *dst,
+		const int *src,
+		int *dst,
 		curandState *dev_States,
-		const int *parent1, const int *parent2,
+		const int *parent1,
+		const int *parent2,
 		const int gen)
 {
 	int tx = threadIdx.x;
@@ -197,7 +205,7 @@ __global__ void crossover(
 	__syncthreads();
 
 	curandState localState = dev_States[tx + POPSIZE * gen];
-	singlepointCrossover(src, dst, tx, localState, s_parent[tx], s_parent[tx + CHROMOSOME]);
+	singlepointCrossover(src, dst, tx, localState, s_parent[tx], s_parent[tx + POPSIZE]);
 	__syncthreads();
 }
 
@@ -209,6 +217,18 @@ __global__ void mutation(int *population, curandState *dev_States, const int gen
 	if (curand_uniform(&localState) < MUTATION_RATE)
 	{
 		population[id] ^= 1;
+	}
+}
+
+__global__ void dev_show(int *population, int *fitness, int *sortedfitness, int *parent1, int *parent2)
+{
+	int tx = threadIdx.x;
+	if (POPSIZE - NUM_OF_ELITE <= tx)
+	{
+		printf("%d,%d,%d,%d\n", tx, sortedfitness[tx], parent1[tx], parent2[tx]);
+	}
+	else {
+		printf("%d,%d,%d,%d\n", tx, fitness[tx], parent1[tx], parent2[tx]);
 	}
 }
 
@@ -240,7 +260,7 @@ void showPopulationOnCPU(int *population, int *fitness, int *parent1, int *paren
 {
 	for (int i = 0; i < POPSIZE; ++i)
 	{
-		printf("%d,%d,%d,", fitness[i], parent1[i], parent2[i]);
+		printf("%d,%d,%d,%d,", i, fitness[i], parent1[i], parent2[i]);
 		for (int j = 0; j < CHROMOSOME; ++j)
 		{
 			printf("%d", population[i * POPSIZE + j]);
@@ -252,46 +272,52 @@ void showPopulationOnCPU(int *population, int *fitness, int *parent1, int *paren
 int main()
 {
     //- GPU用変数 idata: 入力、odata: 出力(総和) --------------------------------------------------
-    int *pdev_PopulationOdd;
-    int *pdev_PopulationEven;
-    int *pdev_Parent1;
-    int *pdev_Parent2;
+    // int *pdev_PopulationOdd;
+    // int *pdev_PopulationEven;
+    // int *pdev_Parent1;
+    // int *pdev_Parent2;
+	thrust::device_vector<int> dev_PopulationOdd(N);
+	thrust::device_vector<int> dev_PopulationEven(N);
+	thrust::device_vector<int> dev_Parent1(POPSIZE);
+	thrust::device_vector<int> dev_Parent2(POPSIZE);
 	thrust::device_vector<int> dev_Fitnesses(POPSIZE);
-	thrust::device_vector<int> dev_Ranks(POPSIZE);
+	thrust::device_vector<int> dev_SortedFitnesses(POPSIZE);
+	thrust::device_vector<int> dev_SortedId(POPSIZE);
 
+	int *pdev_PopulationOdd = thrust::raw_pointer_cast(&dev_PopulationOdd[0]);
+	int *pdev_PopulationEven = thrust::raw_pointer_cast(&dev_PopulationEven[0]);
+	int *pdev_Parent1 = thrust::raw_pointer_cast(&dev_Parent1[0]);
+	int *pdev_Parent2 = thrust::raw_pointer_cast(&dev_Parent2[0]);
 	int *pdev_Fitness = thrust::raw_pointer_cast(&dev_Fitnesses[0]);
-	int *pdev_Ranks = thrust::raw_pointer_cast(&dev_Ranks[0]);
-	thrust::sequence(dev_Ranks.begin(), dev_Ranks.end());
+	int *pdev_SortedFitness = thrust::raw_pointer_cast(&dev_SortedFitnesses[0]);
+	int *pdev_SortedId = thrust::raw_pointer_cast(&dev_SortedId[0]);
 
-    cudaMalloc((void **)&pdev_PopulationOdd, Nbytes);
-    cudaMalloc((void **)&pdev_PopulationEven, Nbytes);
-    cudaMalloc((void **)&pdev_Parent1, POPSIZE * sizeof(int));
-    cudaMalloc((void **)&pdev_Parent2, POPSIZE * sizeof(int));
+    // cudaMalloc((void **)&pdev_PopulationOdd, Nbytes);
+    // cudaMalloc((void **)&pdev_PopulationEven, Nbytes);
+    // cudaMalloc((void **)&pdev_Parent1, POPSIZE * sizeof(int));
+    // cudaMalloc((void **)&pdev_Parent2, POPSIZE * sizeof(int));
 
     //- CPU用変数 ---------------------------------------------------------------------------------
     int *phost_Population;
 	int *phost_Fitness;
-	int *phost_Ranks;
+	int *phost_SortedId;
 	int *phost_Parent1;
 	int *phost_Parent2;
 
-    phost_Fitness = (int *)malloc(POPSIZE * sizeof(int));
-	phost_Ranks   = (int *)malloc(POPSIZE * sizeof(int));
-	phost_Parent1 = (int *)malloc(POPSIZE * sizeof(int));
-	phost_Parent2 = (int *)malloc(POPSIZE * sizeof(int));
+    phost_Fitness       = (int *)malloc(POPSIZE * sizeof(int));
+	phost_SortedId   = (int *)malloc(POPSIZE * sizeof(int));
+	phost_Parent1       = (int *)malloc(POPSIZE * sizeof(int));
+	phost_Parent2       = (int *)malloc(POPSIZE * sizeof(int));
 
 	//- 乱数用変数 --------------------------------------------------------------------------------
 	curandState *dev_TournamentStates;
 	cudaMalloc((void **)&dev_TournamentStates, POPSIZE * TOURNAMENT_SIZE * 2 * NUM_OF_GENERATIONS * sizeof(curandState));
-	cudaDeviceSynchronize();
 
 	curandState *dev_CrossoverStates;
 	cudaMalloc((void **)&dev_CrossoverStates, POPSIZE * NUM_OF_CROSSOVER_POINTS * NUM_OF_GENERATIONS * sizeof(curandState));
-	cudaDeviceSynchronize();
 
 	curandState *dev_MutationStates;
 	cudaMalloc((void **)&dev_MutationStates, POPSIZE * CHROMOSOME * NUM_OF_GENERATIONS * sizeof(curandState));
-	cudaDeviceSynchronize();
 
 	//- Preparation -------------------------------------------------------------------------------
 
@@ -318,23 +344,36 @@ int main()
 	evaluation<<<POPSIZE, CHROMOSOME, CHROMOSOME*sizeof(int)>>>(pdev_PopulationEven, pdev_Fitness);
 	cudaDeviceSynchronize();
 
+	dev_show<<<1, POPSIZE>>>(pdev_PopulationEven, pdev_Fitness, pdev_SortedFitness, pdev_Parent1, pdev_Parent2);
+	cudaDeviceSynchronize();
+
 	// mutation<<<POPSIZE, CHROMOSOME>>>(pdev_PopulationEven, dev_MutationStates, 0);
 
 	for (int gen = 0; gen < NUM_OF_GENERATIONS; ++gen)
 	{
 		printf("#####Gen: %d #######\n", gen);
 
+		thrust::copy(thrust::device, dev_Fitnesses.begin(), dev_Fitnesses.end(), dev_SortedFitnesses.begin());
+		thrust::sequence(dev_SortedId.begin(), dev_SortedId.end());
+		thrust::sort_by_key(dev_SortedFitnesses.begin(), dev_SortedFitnesses.end(), dev_SortedId.begin()); 
+
 		selection<<<1, POPSIZE>>>(
+		// selection<<<N/POPSIZE, POPSIZE>>>(
 				pdev_Fitness,
+				pdev_SortedId,
 				dev_TournamentStates,
 				pdev_Parent1,
 				pdev_Parent2,
 				gen);
 		cudaDeviceSynchronize();
 
+		dev_show<<<1, POPSIZE>>>(pdev_PopulationEven, pdev_Fitness, pdev_SortedFitness, pdev_Parent1, pdev_Parent2);
+		cudaDeviceSynchronize();
+
 		if (gen % 2 == 0) // Even
 		{
 			crossover<<<1, POPSIZE, POPSIZE * sizeof(int) * 2>>>(
+			// crossover<<<N/POPSIZE, POPSIZE, POPSIZE * sizeof(int) * 2>>>(
 					pdev_PopulationEven,
 					pdev_PopulationOdd,
 					dev_CrossoverStates,
@@ -352,6 +391,7 @@ int main()
 		else // Odd
 		{
 			crossover<<<1, POPSIZE, POPSIZE * sizeof(int) * 2>>>(
+			// crossover<<<N/POPSIZE, POPSIZE, POPSIZE * sizeof(int) * 2>>>(
 					pdev_PopulationOdd,
 					pdev_PopulationEven,
 					dev_CrossoverStates,
@@ -367,9 +407,10 @@ int main()
 			cudaDeviceSynchronize();
 		}
 #ifdef _DEBUG
-		cudaMemcpy(phost_Fitness, pdev_Fitness, POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
-		cudaMemcpy(phost_Parent1, pdev_Parent1, POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
-		cudaMemcpy(phost_Parent2, pdev_Parent2, POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
+		cudaMemcpy(phost_Fitness,  pdev_Fitness,  POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
+		cudaMemcpy(phost_SortedId, pdev_SortedId, POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
+		cudaMemcpy(phost_Parent1,  pdev_Parent1,  POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
+		cudaMemcpy(phost_Parent2,  pdev_Parent2,  POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
 		if (gen % 2 == 0)
 		{
 			cudaMemcpy(phost_Population, pdev_PopulationOdd, Nbytes, cudaMemcpyDeviceToHost);
@@ -387,14 +428,14 @@ int main()
 	cudaMemcpy(phost_Parent2, pdev_Parent2, POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
     cudaMemcpy(phost_Population, pdev_PopulationOdd, Nbytes, cudaMemcpyDeviceToHost);
 
-	// cudaMemcpy(phost_Ranks, pdev_Ranks, POPSIZE * sizeof(int), cudaMemcpyHostToHost);
+	// cudaMemcpy(phost_Ranks, pdev_SortedId, POPSIZE * sizeof(int), cudaMemcpyHostToHost);
 
-    cudaFree(pdev_PopulationOdd);
-    cudaFree(pdev_PopulationEven);
+    // cudaFree(pdev_PopulationOdd);
+    // cudaFree(pdev_PopulationEven);
 
     free(phost_Population);
 	free(phost_Fitness);
-	free(phost_Ranks);
+	free(phost_SortedId);
 	free(phost_Parent1);
 	free(phost_Parent2);
 
