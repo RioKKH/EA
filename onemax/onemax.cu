@@ -14,16 +14,16 @@
   * @def POPSIZE
   * @brief Size of the population
   */
-#define POPSIZE 8
+#define POPSIZE 16
 // #define POPSIZE 512
 
 /** @def CHROMOSOME
   * @brief Size of the chromosome
   */
-#define CHROMOSOME 8
+#define CHROMOSOME 16
 // #define CHROMOSOME 512
 
-#define NUM_OF_GENERATIONS 20 
+#define NUM_OF_GENERATIONS 16 
 #define NUM_OF_ELITE 4
 #define TOURNAMENT_SIZE 3
 #define NUM_OF_CROSSOVER_POINTS 1
@@ -110,7 +110,6 @@ __host__ __device__ int getBestIndividual(const int *fitness)
 	int best_index = 0;
 	for (int i = 0; i < TOURNAMENT_SIZE; ++i)
 	{
-		// printf("getBestIndividual:%d\n", i);
 		if (fitness[i] > best)
 		{
 			best = fitness[i];
@@ -159,17 +158,17 @@ __global__ void selection(int* fitness, int* sortedid, curandState *dev_States, 
 		parent1[tx] = tournamentSelection(fitness, dev_States, tx, MALE, gen);
 		parent2[tx] = tournamentSelection(fitness, dev_States, tx, FEMALE, gen);
 	}
-	// printf("%d,%d,%d,%d\n", tx, fitness[tx], parent1[tx], parent2[tx]);
 }
 
 __device__ void singlepointCrossover(const int *src, int *dst, int tx, curandState localState, int parent1, int parent2) 
 { 
 	int i = 0;
 	unsigned int point1;
+	// txは個体のインデックス
+	// 従ってこのoffsetはpopulation のオフセットになる。
 	int offset = tx * CHROMOSOME;
 
 	point1 = (unsigned int)(curand_uniform(&localState) * (CHROMOSOME));
-	// point1 = (unsigned int)(curand_uniform(&localState) * (POPSIZE));
 	for (i = 0; i < point1; ++i)
 	{
 		dst[i + offset] = src[parent1 * CHROMOSOME + i];
@@ -196,8 +195,6 @@ __global__ void crossover(
 		const int gen)
 {
 	int tx = threadIdx.x;
-
-	// singlepointCrossover(src, dst, tx, dev_States[tx], parent1[tx], parent2[tx]);
 
 	extern __shared__ volatile int s_parent[];
 	s_parent[tx] = parent1[tx];
@@ -245,14 +242,15 @@ void initializePopulationOnCPU(int *population)
     thrust::generate(population, population + N, my_rand);
 
 #ifdef _DEBUG
-    for (int i=0; i<POPSIZE; ++i)
+    for (int i = 0; i < POPSIZE; ++i)
 	{
-		for (int j=0; j<CHROMOSOME; ++j)
+		for (int j = 0; j < CHROMOSOME; ++j)
 		{
-			std::cout << population[i * POPSIZE + j];
+			printf("%d", population[i * CHROMOSOME + j]);
 		}
-		std::cout << std::endl;
+		printf("\n");
 	}
+	std::cout << "end of initialization" << std::endl;
 #endif // _DEBUG
 }
 
@@ -263,7 +261,7 @@ void showPopulationOnCPU(int *population, int *fitness, int *parent1, int *paren
 		printf("%d,%d,%d,%d,", i, fitness[i], parent1[i], parent2[i]);
 		for (int j = 0; j < CHROMOSOME; ++j)
 		{
-			printf("%d", population[i * POPSIZE + j]);
+			printf("%d", population[i * CHROMOSOME + j]);
 		}
 		printf("\n");
 	}
@@ -298,6 +296,8 @@ int main()
     // cudaMalloc((void **)&pdev_Parent2, POPSIZE * sizeof(int));
 
     //- CPU用変数 ---------------------------------------------------------------------------------
+	// thrust::host_vector<int> host_Population(N);
+	// int *phost_Population = thrust::raw_pointer_cast(&host_Population[0]);
     int *phost_Population;
 	int *phost_Fitness;
 	int *phost_SortedId;
@@ -322,8 +322,17 @@ int main()
 	//- Preparation -------------------------------------------------------------------------------
 
     // CPU側でデータを初期化してGPUへコピー
-    phost_Population = (int *)malloc(Nbytes);
+	// thrust::generate(host_Population.begin(), host_Population.end(), my_rand);
+    phost_Population = (int *)malloc(POPSIZE * CHROMOSOME * sizeof(int));
     initializePopulationOnCPU(phost_Population);
+	for (int i = 0; i < POPSIZE; ++i)
+	{
+		for (int j = 0; j < CHROMOSOME; ++j)
+		{
+			printf("%d", phost_Population[i * CHROMOSOME + j]);
+		}
+		printf("\n");
+	}
     cudaMemcpy(pdev_PopulationEven, phost_Population, Nbytes, cudaMemcpyHostToDevice);
 
 	// --------------------------------
@@ -344,8 +353,8 @@ int main()
 	evaluation<<<POPSIZE, CHROMOSOME, CHROMOSOME*sizeof(int)>>>(pdev_PopulationEven, pdev_Fitness);
 	cudaDeviceSynchronize();
 
-	dev_show<<<1, POPSIZE>>>(pdev_PopulationEven, pdev_Fitness, pdev_SortedFitness, pdev_Parent1, pdev_Parent2);
-	cudaDeviceSynchronize();
+	// dev_show<<<1, POPSIZE>>>(pdev_PopulationEven, pdev_Fitness, pdev_SortedFitness, pdev_Parent1, pdev_Parent2);
+	// cudaDeviceSynchronize();
 
 	// mutation<<<POPSIZE, CHROMOSOME>>>(pdev_PopulationEven, dev_MutationStates, 0);
 
@@ -367,8 +376,8 @@ int main()
 				gen);
 		cudaDeviceSynchronize();
 
-		dev_show<<<1, POPSIZE>>>(pdev_PopulationEven, pdev_Fitness, pdev_SortedFitness, pdev_Parent1, pdev_Parent2);
-		cudaDeviceSynchronize();
+		// dev_show<<<1, POPSIZE>>>(pdev_PopulationEven, pdev_Fitness, pdev_SortedFitness, pdev_Parent1, pdev_Parent2);
+		// cudaDeviceSynchronize();
 
 		if (gen % 2 == 0) // Even
 		{
