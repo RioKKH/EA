@@ -1,5 +1,6 @@
-#ifndef PARAMETERS_H
-#define PARAMETERS_H
+#pragma once
+// #ifndef PARAMETERS_H
+// #define PARAMETERS_H
 
 #include <string>
 
@@ -30,4 +31,4 @@ public:
     float getMutateProbability();
 };
 
-#endif /* PARAMETERS_H */
+// #endif /* PARAMETERS_H */
