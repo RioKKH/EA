@@ -16,7 +16,7 @@ TARGET = ${APPS}
 all: ${APPS}
 build: ${APPS}
 
-parameters.o: parameters.cu parameters.hpp
+Parameters.o: Parameters.cpp Parameters.hpp
 	$(NVCC) $(NVCC_OPTIONS) -o $@ -c $<
 
 CUDAKernels.o: CUDAKernels.cu CUDAKernels.h
@@ -25,7 +25,7 @@ CUDAKernels.o: CUDAKernels.cu CUDAKernels.h
 Misc.o: Misc.cu Misc.h
 	$(NVCC) $(NVCC_OPTIONS) -o $@ -c $<
 
-onemax : main.cu CUDAKernels.o Misc.o
+onemax : main.cu CUDAKernels.o Misc.o Parameters.o
 	$(NVCC) $(NVCC_OPTIONS) $^ -o $@
 
 run: build
