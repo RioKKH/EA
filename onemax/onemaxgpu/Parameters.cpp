@@ -8,7 +8,6 @@
 
 Parameters::Parameters()
 {
-    loadParams();
 }
 
 Parameters::~Parameters()
@@ -27,27 +26,27 @@ void Parameters::loadParams()
         {
             POPSIZE = std::stoi(results[1].str());
         }
-        else if (reges_match(line, results, reCHROMOSOME))
+        else if (std::regex_match(line, results, reCHROMOSOME))
         {
             CHROMOSOME = std::stoi(results[1].str());
         }
-        else if (regex_match(line, results, reNUM_OF_GENERATIONS))
+        else if (std::regex_match(line, results, reNUM_OF_GENERATIONS))
         {
             NUM_OF_GENERATIONS = std::stoi(results[1].str());
         }
-        else if (regex_match(line, results, reNUM_OF_ELITE))
+        else if (std::regex_match(line, results, reNUM_OF_ELITE))
         {
             NUM_OF_ELITE = std::stoi(results[1].str());
         }
-        else if (regex_match(line, results, reTOURNAMENT_SIZE))
+        else if (std::regex_match(line, results, reTOURNAMENT_SIZE))
         {
             TOURNAMENT_SIZE = std::stoi(results[1].str());
         }
-        else if (regex_match(line, results, reNUM_OF_CROSSOVER_POINTS))
+        else if (std::regex_match(line, results, reNUM_OF_CROSSOVER_POINTS))
         {
             NUM_OF_CROSSOVER_POINTS = std::stoi(results[1].str());
         }
-        else if (regex_match(line, results, reMUTATE_RATE))
+        else if (std::regex_match(line, results, reMUTATION_RATE))
         {
             MUTATION_RATE = std::stof(results[1].str());
         }
