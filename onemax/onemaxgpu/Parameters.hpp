@@ -1,5 +1,5 @@
 #ifndef PARAMETERS_HPP
-#define PARAMETERS_HPP
+#define PARAMETERS_HPP #include <string>
 
 #include <string>
 
@@ -25,9 +25,7 @@ struct EvolutionParameters
  * @class Parameters
  * @blief Singleton class with Parameters maintaining them in CPU and GPU constant memory.
  */
-class Parameters
-{
-private:
+class Parameters { private:
     const std::string PARAMNAME = "onemax.prms";
     EvolutionParameters mEvolutionParameters;
 
@@ -47,7 +45,7 @@ public:
 
     static Parameters& getInstance();
 
-    void copyToDevice();
+    void copyToDevice(EvolutionParameters *gpuprms);
     void loadParams();
     int getPopsize() const;
     int getChromosome() const;

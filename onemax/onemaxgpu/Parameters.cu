@@ -16,7 +16,7 @@ Parameters& Parameters::getInstance()
     return instance;
 }
 
-void Parameters::copyToDevice()
+void Parameters::copyToDevice(EvolutionParameters *gpuEvoPrms)
 {
     printf("copyToDEvice %d\n", mEvolutionParameters.POPSIZE);
     cudaMemcpyToSymbol(gpuEvoPrms,
