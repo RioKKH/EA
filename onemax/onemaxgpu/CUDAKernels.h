@@ -27,14 +27,18 @@ __device__ int tournamentSelection(const int *fitness,
                                    curandState *dev_States,
                                    const int &ix,
                                    PARENTS mf,
-                                   int gen);
+                                   int gen,
+                                   int *tournament_individual,
+                                   int *tournament_fitness);
 
 __global__ void selection(int *fitness,
                           int *sortedid,
                           curandState *dev_States,
                           int *parent1,
                           int *parent2,
-                          int getn);
+                          int gen,
+                          int *tournament_individual,
+                          int *tournament_fitness);
 
 __device__ void singlepointCrossover(const int *src,
                                      int *dst,
@@ -60,6 +64,8 @@ __global__ void dev_show(int *population,
                          int *sortedfitness,
                          int *parent1,
                          int *parent2);
+
+__global__ void dev_prms_show(void);
 
 #endif // CUDA_KERNELS_H
 

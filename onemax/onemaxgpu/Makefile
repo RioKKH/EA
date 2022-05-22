@@ -9,14 +9,14 @@ NVCC_OPTIONS = -arch=sm_52 -D_DEBUG
 GNUOPENMP = -fopenmp
 INTELOPEMP = -openmp
 
-APPS = onemax test
+APPS = onemax
 
 TARGET = ${APPS}
 
 all: ${APPS}
 build: ${APPS}
 
-Parameters.o: Parameters.cpp Parameters.hpp
+Parameters.o: Parameters.cu Parameters.hpp
 	$(NVCC) $(NVCC_OPTIONS) -o $@ -c $<
 
 CUDAKernels.o: CUDAKernels.cu CUDAKernels.h
