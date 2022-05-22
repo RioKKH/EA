@@ -6,16 +6,21 @@
 #include "CUDAKernels.h"
 #include "Misc.h"
 
-__constant__ EvolutionParameters *gpuEvoPrms;
+__constant__ EvolutionParameters gpuEvoPrms;
 __constant__ int POPSIZE;
 
 int main()
 {
     // パラメータ読み込み
-    Parameters& prms = Parameters::getInstance();
-    int host_popsize = prms.getPopsize();
-    cudaMemcpyToSymbol(POPSIZE, &host_popsize, sizeof(int));
-    prms.copyToDevice();
+    Parameters::getInstance().loadParams();
+    printf("%d\n", Parameters::getInstance().getPopsize());
+    // Parameters prms = Parameters::getInstance();
+    // prms.loadParams();
+    // printf("%d", prms->getInstance()->getPopsize());
+    // int host_popsize = prms.getPopsize();
+    // cudaMemcpyToSymbol(POPSIZE, &host_popsize, sizeof(int));
+    // printf("%d\n", prms->getPopsize());
+    Parameters::getInstance().copyToDevice();
     cudaDeviceSynchronize();
     dev_prms_show<<<1, 1>>>();
     cudaDeviceSynchronize();

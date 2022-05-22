@@ -9,8 +9,8 @@
  */
 struct EvolutionParameters
 {
-    int POPSIZE = 0;
-    int CHROMOSOME = 0;
+    int POPSIZE;
+    int CHROMOSOME;
     int NUM_OF_GENERATIONS;
     int NUM_OF_ELITE;
     int TOURNAMENT_SIZE;
@@ -45,7 +45,7 @@ public:
 
     static Parameters& getInstance();
 
-    void copyToDevice(EvolutionParameters *gpuprms);
+    void copyToDevice();
     void loadParams();
     int getPopsize() const;
     int getChromosome() const;
