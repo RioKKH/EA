@@ -232,9 +232,9 @@ __global__ void dev_prms_show(void)
 {
     printf("hello\n");
     printf("dev_prms_show %d\n", POPSIZE);
-    // printf("%d\n", gpuEvoPrms->POPSIZE);
-    // printf("%d\n", gpuEvoPrms->CHROMOSOME);
-    // printf("%d\n", gpuEvoPrms->NUM_OF_ELITE);
+    printf("%d\n", gpuEvoPrms->POPSIZE);
+    printf("%d\n", gpuEvoPrms->CHROMOSOME);
+    printf("%d\n", gpuEvoPrms->NUM_OF_ELITE);
 }
 
 
