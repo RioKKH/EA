@@ -45,7 +45,7 @@ public:
 
     static Parameters& getInstance();
 
-    void copyToDevice(EvolutionParameters *gpuprms);
+    void copyToDevice(EvolutionParameters gpuprms);
     void loadParams();
     int getPopsize() const;
     int getChromosome() const;

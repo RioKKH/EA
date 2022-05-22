@@ -8,7 +8,7 @@
 #include "Parameters.hpp"
 #include "GAregex.hpp"
 
-extern __constant__ EvolutionParameters *gpuEvoPrms;
+// extern __constant__ EvolutionParameters *gpuEvoPrms;
 
 Parameters& Parameters::getInstance()
 {
@@ -16,10 +16,10 @@ Parameters& Parameters::getInstance()
     return instance;
 }
 
-void Parameters::copyToDevice(EvolutionParameters *gpuEvoPrms)
+void Parameters::copyToDevice(EvolutionParameters gpuEvoPrms)
 {
     printf("copyToDEvice %d\n", mEvolutionParameters.POPSIZE);
-    cudaMemcpyToSymbol(gpuEvoPrms,
+    cudaMemcpyToSymbol(&gpuEvoPrms,
                        &mEvolutionParameters,
                        sizeof(mEvolutionParameters));
 }
