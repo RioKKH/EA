@@ -1,17 +1,21 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <cuda.h>
 
 #include "Parameters.hpp"
 #include "CUDAKernels.h"
 #include "Misc.h"
 
-__constant__ EvolutionParameters *gpuEvoPrms;
+extern __constant__ EvolutionParameters *gpuEvoPrms;
+__constant__ int POPSIZE;
 
 int main()
 {
     // パラメータ読み込み
     Parameters& prms = Parameters::getInstance();
-    prms.copyToDevice();
+    int host_popsize = prms.getPopsize();
+    cudaMemcpyToSymbol(POPSIZE, &host_popsize, sizeof(int));
+    // prms.copyToDevice();
     cudaDeviceSynchronize();
     dev_prms_show<<<1, 1>>>();
     cudaDeviceSynchronize();

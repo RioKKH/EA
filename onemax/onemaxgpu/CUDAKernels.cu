@@ -6,6 +6,7 @@
 #include "Misc.h"
 
 extern __constant__ EvolutionParameters *gpuEvoPrms;
+extern __constant__ int POPSIZE;
 
 /*
 #define CUDA_CALL(x) do                                     \
@@ -229,9 +230,11 @@ __global__ void dev_show(int *population, int *fitness, int *sortedfitness, int 
 
 __global__ void dev_prms_show(void)
 {
-    printf("%d\n", gpuEvoPrms->POPSIZE);
-    printf("%d\n", gpuEvoPrms->CHROMOSOME);
-    printf("%d\n", gpuEvoPrms->NUM_OF_ELITE);
+    printf("hello\n");
+    printf("dev_prms_show %d\n", POPSIZE);
+    // printf("%d\n", gpuEvoPrms->POPSIZE);
+    // printf("%d\n", gpuEvoPrms->CHROMOSOME);
+    // printf("%d\n", gpuEvoPrms->NUM_OF_ELITE);
 }
 
 
