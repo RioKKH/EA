@@ -6,7 +6,7 @@
 #include "CUDAKernels.h"
 #include "Misc.h"
 
-extern __constant__ EvolutionParameters *gpuEvoPrms;
+__constant__ EvolutionParameters *gpuEvoPrms;
 __constant__ int POPSIZE;
 
 int main()
@@ -15,7 +15,7 @@ int main()
     Parameters& prms = Parameters::getInstance();
     int host_popsize = prms.getPopsize();
     cudaMemcpyToSymbol(POPSIZE, &host_popsize, sizeof(int));
-    // prms.copyToDevice();
+    prms.copyToDevice();
     cudaDeviceSynchronize();
     dev_prms_show<<<1, 1>>>();
     cudaDeviceSynchronize();

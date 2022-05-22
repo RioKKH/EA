@@ -8,7 +8,7 @@
 #include "Parameters.hpp"
 #include "GAregex.hpp"
 
-__constant__ EvolutionParameters *gpuEvoPrms;
+extern __constant__ EvolutionParameters *gpuEvoPrms;
 
 Parameters& Parameters::getInstance()
 {
