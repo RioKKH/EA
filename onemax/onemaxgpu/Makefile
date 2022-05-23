@@ -34,6 +34,7 @@ test : test.cpp Parameters.o
 run: build
 
 clean:
-	rm -f ${APPS} rm -f *.o
+	rm -f ${APPS}
+	rm -f *.o
 
 clobber: clean

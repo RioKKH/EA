@@ -9,8 +9,8 @@
  */
 struct EvolutionParameters
 {
-    int POPSIZE = 0;
-    int CHROMOSOME = 0;
+    int POPSIZE;
+    int CHROMOSOME;
     int NUM_OF_GENERATIONS;
     int NUM_OF_ELITE;
     int TOURNAMENT_SIZE;
@@ -25,7 +25,8 @@ struct EvolutionParameters
  * @class Parameters
  * @blief Singleton class with Parameters maintaining them in CPU and GPU constant memory.
  */
-class Parameters { private:
+class Parameters {
+private:
     const std::string PARAMNAME = "onemax.prms";
     EvolutionParameters mEvolutionParameters;
 
@@ -43,9 +44,14 @@ public:
     Parameters(Parameters&&) = delete; // ムーブコンストラクターもdelete指定
     Parameters& operator=(Parameters&&) = delete; // ムーブ代入演算子をdelete指定
 
-    static Parameters& getInstance();
+    static Parameters* getInstance()
+    // static Parameters& getInstance();
+    {
+        static Parameters *instance;
+        return instance;
+    }
 
-    void copyToDevice(EvolutionParameters gpuprms);
+    void copyToDevice();
     void loadParams();
     int getPopsize() const;
     int getChromosome() const;

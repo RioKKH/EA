@@ -16,7 +16,6 @@ enum PARENTS {
 
 __global__ void setup_kernel(curandState *state);
 
-
 __global__ void generate_kernel(curandState *state, float *result);
 
 __global__ void evaluation(int *population, int *fitness);

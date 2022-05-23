@@ -12,13 +12,22 @@ __constant__ int POPSIZE;
 int main()
 {
     // パラメータ読み込み
-    Parameters& prms = Parameters::getInstance();
-    // int host_popsize = prms.getPopsize();
+    Parameters *prms;
+    // prms  = (Parameters *)malloc(sizeof(Parameters));
+
+    Parameters::getInstance();
+    Parameters::getInstance()->getPopsize();
+    // prms->loadParams();
+    // int host_popsize = prms->getPopsize();
+    // printf("host_popsize %d\n", host_popsize);
+    // printf("%d", prms->getInstance()->getPopsize());
     // cudaMemcpyToSymbol(POPSIZE, &host_popsize, sizeof(int));
-    prms.copyToDevice(gpuEvoPrms);
-    cudaDeviceSynchronize();
-    dev_prms_show<<<1, 1>>>();
-    cudaDeviceSynchronize();
+    // cudaDeviceSynchronize();
+    // printf("%d\n", prms->getPopsize());
+    // Parameters::getInstance().copyToDevice();
+    // cudaDeviceSynchronize();
+    // dev_prms_show<<<1, 1>>>();
+    // cudaDeviceSynchronize();
 	// cudaMemcpy(phost_Fitness,  pdev_Fitness,  POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
 
     // int POPSIZE = prms.getPopsize();
