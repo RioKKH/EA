@@ -8,11 +8,14 @@
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 #include <thrust/device_ptr.h>
+#include "Parameters.hpp"
 
 enum PARENTS {
     MALE    = 0,
     FEMALE  = 1,
 };
+
+void copyToDevice(EvolutionParameters cpuEvoPrms);
 
 __global__ void setup_kernel(curandState *state);
 

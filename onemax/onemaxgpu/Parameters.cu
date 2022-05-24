@@ -8,23 +8,6 @@
 #include "Parameters.hpp"
 #include "GAregex.hpp"
 
-extern __constant__ EvolutionParameters gpuEvoPrms;
-
-// static Parameters *Parameters::getInstance()
-// //Parameters& Parameters::getInstance()
-// {
-//     static Parameters *instance;
-//     // static Parameters instance;
-//     return instance;
-// }
-
-void Parameters::copyToDevice()
-{
-    printf("copyToDEvice %d\n", mEvolutionParameters.POPSIZE);
-    cudaMemcpyToSymbol(gpuEvoPrms,
-                       &mEvolutionParameters,
-                       sizeof(EvolutionParameters));
-}
 
 void Parameters::loadParams()
 {
@@ -36,44 +19,44 @@ void Parameters::loadParams()
     {
         if (std::regex_match(line, results, rePOPSIZE))
         {
-            mEvolutionParameters.POPSIZE = std::stoi(results[1].str());
+            cpuEvoPrms.POPSIZE = std::stoi(results[1].str());
         }
         else if (std::regex_match(line, results, reCHROMOSOME))
         {
-            mEvolutionParameters.CHROMOSOME = std::stoi(results[1].str());
+            cpuEvoPrms.CHROMOSOME = std::stoi(results[1].str());
         }
         else if (std::regex_match(line, results, reNUM_OF_GENERATIONS))
         {
-            mEvolutionParameters.NUM_OF_GENERATIONS = std::stoi(results[1].str());
+            cpuEvoPrms.NUM_OF_GENERATIONS = std::stoi(results[1].str());
         }
         else if (std::regex_match(line, results, reNUM_OF_ELITE))
         {
-            mEvolutionParameters.NUM_OF_ELITE = std::stoi(results[1].str());
+            cpuEvoPrms.NUM_OF_ELITE = std::stoi(results[1].str());
         }
         else if (std::regex_match(line, results, reTOURNAMENT_SIZE))
         {
-            mEvolutionParameters.TOURNAMENT_SIZE = std::stoi(results[1].str());
+            cpuEvoPrms.TOURNAMENT_SIZE = std::stoi(results[1].str());
         }
         else if (std::regex_match(line, results, reNUM_OF_CROSSOVER_POINTS))
         {
-            mEvolutionParameters.NUM_OF_CROSSOVER_POINTS = std::stoi(results[1].str());
+            cpuEvoPrms.NUM_OF_CROSSOVER_POINTS = std::stoi(results[1].str());
         }
         else if (std::regex_match(line, results, reMUTATION_RATE))
         {
-            mEvolutionParameters.MUTATION_RATE = std::stof(results[1].str());
+            cpuEvoPrms.MUTATION_RATE = std::stof(results[1].str());
         }
     }
-    mEvolutionParameters.N = mEvolutionParameters.POPSIZE * mEvolutionParameters.CHROMOSOME;
-    mEvolutionParameters.Nbytes = mEvolutionParameters.N * sizeof(int);
+    cpuEvoPrms.N = cpuEvoPrms.POPSIZE * cpuEvoPrms.CHROMOSOME;
+    cpuEvoPrms.Nbytes = cpuEvoPrms.N * sizeof(int);
 
 #ifdef _DEBUG
-    std::cout << "POPSIZE: " << mEvolutionParameters.POPSIZE << std::endl;
-    std::cout << "CHROMOSOME: " << mEvolutionParameters.CHROMOSOME << std::endl;
-    std::cout << "NUM_OF_GENERATIONS: " << mEvolutionParameters.NUM_OF_GENERATIONS << std::endl;
-    std::cout << "NUM_OF_ELITE: " << mEvolutionParameters.NUM_OF_ELITE << std::endl;
-    std::cout << "TOURNAMENT_SIZE: " << mEvolutionParameters.TOURNAMENT_SIZE << std::endl;
-    std::cout << "NUM_OF_CROSSOVER_POINTS: " << mEvolutionParameters.NUM_OF_CROSSOVER_POINTS << std::endl;
-    std::cout << "MUTATION_RATE: " << mEvolutionParameters.MUTATION_RATE << std::endl;
+    std::cout << "POPSIZE: " << cpuEvoPrms.POPSIZE << std::endl;
+    std::cout << "CHROMOSOME: " << cpuEvoPrms.CHROMOSOME << std::endl;
+    std::cout << "NUM_OF_GENERATIONS: " << cpuEvoPrms.NUM_OF_GENERATIONS << std::endl;
+    std::cout << "NUM_OF_ELITE: " << cpuEvoPrms.NUM_OF_ELITE << std::endl;
+    std::cout << "TOURNAMENT_SIZE: " << cpuEvoPrms.TOURNAMENT_SIZE << std::endl;
+    std::cout << "NUM_OF_CROSSOVER_POINTS: " << cpuEvoPrms.NUM_OF_CROSSOVER_POINTS << std::endl;
+    std::cout << "MUTATION_RATE: " << cpuEvoPrms.MUTATION_RATE << std::endl;
 #endif // _DEBUG
 
     infile.close();
@@ -81,14 +64,15 @@ void Parameters::loadParams()
     return;
 }
 
-int Parameters::getPopsize() const { return mEvolutionParameters.POPSIZE; }
-int Parameters::getChromosome() const { return mEvolutionParameters.CHROMOSOME; }
-int Parameters::getNumOfGenerations() const { return mEvolutionParameters.NUM_OF_GENERATIONS; }
-int Parameters::getNumOfElite() const { return mEvolutionParameters.NUM_OF_ELITE; }
-int Parameters::getTournamentSize() const { return mEvolutionParameters.TOURNAMENT_SIZE; }
-int Parameters::getNumOfCrossoverPoints() const { return mEvolutionParameters.NUM_OF_CROSSOVER_POINTS; }
-float Parameters::getMutationRate() const { return mEvolutionParameters.MUTATION_RATE; }
-int Parameters::getN() const { return mEvolutionParameters.N; }
-int Parameters::getNbytes() const { return mEvolutionParameters.Nbytes; }
+int Parameters::getPopsize() const { return cpuEvoPrms.POPSIZE; }
+int Parameters::getChromosome() const { return cpuEvoPrms.CHROMOSOME; }
+int Parameters::getNumOfGenerations() const { return cpuEvoPrms.NUM_OF_GENERATIONS; }
+int Parameters::getNumOfElite() const { return cpuEvoPrms.NUM_OF_ELITE; }
+int Parameters::getTournamentSize() const { return cpuEvoPrms.TOURNAMENT_SIZE; }
+int Parameters::getNumOfCrossoverPoints() const { return cpuEvoPrms.NUM_OF_CROSSOVER_POINTS; }
+float Parameters::getMutationRate() const { return cpuEvoPrms.MUTATION_RATE; }
+int Parameters::getN() const { return cpuEvoPrms.N; }
+int Parameters::getNbytes() const { return cpuEvoPrms.Nbytes; }
+EvolutionParameters Parameters::getEvoPrms() const { return cpuEvoPrms; }
 
 

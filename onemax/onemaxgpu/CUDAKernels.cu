@@ -5,28 +5,36 @@
 #include "Parameters.hpp"
 #include "Misc.h"
 
-extern __constant__ EvolutionParameters gpuEvoPrms;
-extern __constant__ int POPSIZE;
+__constant__ EvolutionParameters gpuEvoPrms;
 
-/*
-#define CUDA_CALL(x) do                                     \
-{                                                           \
-    if((x) != cudaSuccess)                                  \
-    {                                                       \
-        printf("Error at %s:%d\n", __FILE__, __LINE__);     \
-        return EXIT_FAILURE;                                \
-    }                                                       \
-} while (0)                                                 \
+#define CUDA_CALL(call)                                                    \
+{                                                                          \
+    const cudaError_t error = call;                                        \
+    if(error != cudaSuccess)                                               \
+    {                                                                      \
+        printf("Error at %s:%d\n", __FILE__, __LINE__);                    \
+        printf("code:%d, reason: %s\n", error, cudaGetErrorString(error)); \
+        return EXIT_FAILURE;                                               \
+    }                                                                      \
+}                                                                          \
 
-#define CURAND_CALL(x) do                                   \
-{                                                           \
-    if((x) != CURAND_STATUS_SUCCESS)                        \
-    {                                                       \
-        printf("Error at %s:%d\n", __FILE__, __LINE__);     \
-        return EXIT_FAILURE;                                \
-    }                                                       \
-} while (0)                                                 \
-*/
+#define CURAND_CALL(x) do                                                  \
+{                                                                          \
+    if((x) != CURAND_STATUS_SUCCESS)                                       \
+    {                                                                      \
+        printf("Error at %s:%d\n", __FILE__, __LINE__);                    \
+        return EXIT_FAILURE;                                               \
+    }                                                                      \
+} while (0)                                                                \
+
+void copyToDevice(EvolutionParameters cpuEvoPrms)
+// __host__ __device__ void copyToDevice(EvolutionParameters cpuEvoPrms)
+{
+    printf("copyToDevice %d\n", cpuEvoPrms.POPSIZE);
+    cudaMemcpyToSymbol(gpuEvoPrms,
+                       &cpuEvoPrms,
+                       sizeof(EvolutionParameters));
+}
 
 __global__ void setup_kernel(curandState *state)
 {
@@ -52,8 +60,7 @@ __global__ void evaluation(int *population, int *fitness)
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	int tx = threadIdx.x;
 	int stride;
-
-	extern __shared__ volatile int s_idata[];
+extern __shared__ volatile int s_idata[];
 	s_idata[tx] = population[i];
 	__syncthreads();
 
@@ -186,7 +193,7 @@ __device__ void singlepointCrossover(const int *src, int *dst, int tx, curandSta
 
 /**
  * @param[in] src		Population where current-generation data is stored.
- * @param[out] dst		Population where next-generation data is stored.
+ * @param[out] dst		Populat ion where next-generation data is stored.
  * @param[in] parent1	Fitness of parent 1
  * @param[in] parent2	Fitness of parent 2
  * @return void
@@ -249,10 +256,9 @@ __global__ void dev_show(int *population, int *fitness, int *sortedfitness, int 
 __global__ void dev_prms_show(void)
 {
     printf("hello\n");
-    printf("dev_prms_show %d\n", POPSIZE);
-    // printf("%d\n", gpuEvoPrms.POPSIZE);
-    // printf("%d\n", gpuEvoPrms.CHROMOSOME);
-    // printf("%d\n", gpuEvoPrms.NUM_OF_ELITE);
+    printf("%d\n", gpuEvoPrms.POPSIZE);
+    printf("%d\n", gpuEvoPrms.CHROMOSOME);
+    printf("%d\n", gpuEvoPrms.NUM_OF_ELITE);
 }
 
 

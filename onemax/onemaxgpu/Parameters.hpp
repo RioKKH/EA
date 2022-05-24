@@ -1,5 +1,5 @@
 #ifndef PARAMETERS_HPP
-#define PARAMETERS_HPP #include <string>
+#define PARAMETERS_HPP
 
 #include <string>
 
@@ -7,7 +7,7 @@
  * @struct EvolutionParameters
  * @brief  Parameters of the evolutionary process.
  */
-struct EvolutionParameters
+typedef struct
 {
     int POPSIZE;
     int CHROMOSOME;
@@ -18,8 +18,7 @@ struct EvolutionParameters
     float MUTATION_RATE;
     int N;
     int Nbytes;
-};
-
+} EvolutionParameters;
 
 /**
  * @class Parameters
@@ -28,40 +27,24 @@ struct EvolutionParameters
 class Parameters {
 private:
     const std::string PARAMNAME = "onemax.prms";
-    EvolutionParameters mEvolutionParameters;
-
-    // Singletonとする
-    // Parameters() = default;
-    Parameters()
-    {
-        loadParams();
-    }
-    ~Parameters() = default;
+    EvolutionParameters cpuEvoPrms;
 
 public:
-    Parameters(const Parameters& obj) = delete; // コピーコンストラクタをdelete指定
-    Parameters& operator=(const Parameters& obj) = delete; // コピー代入演算子もdelete指定
-    Parameters(Parameters&&) = delete; // ムーブコンストラクターもdelete指定
-    Parameters& operator=(Parameters&&) = delete; // ムーブ代入演算子をdelete指定
+    explicit Parameters() {}
+    ~Parameters() {}
 
-    static Parameters* getInstance()
-    // static Parameters& getInstance();
-    {
-        static Parameters *instance;
-        return instance;
-    }
-
+    void loadParams(void);
+    int getPopsize(void) const;
+    int getChromosome(void) const;
+    int getNumOfGenerations(void) const;
+    int getNumOfElite(void) const;
+    int getTournamentSize(void) const;
+    int getNumOfCrossoverPoints(void) const;
+    float getMutationRate(void) const;
+    int getN(void) const;
+    int getNbytes(void) const;
+    EvolutionParameters getEvoPrms(void) const;
     void copyToDevice();
-    void loadParams();
-    int getPopsize() const;
-    int getChromosome() const;
-    int getNumOfGenerations() const;
-    int getNumOfElite() const;
-    int getTournamentSize() const;
-    int getNumOfCrossoverPoints() const;
-    float getMutationRate() const;
-    int getN() const;
-    int getNbytes() const;
 };
 
 #endif // PARAMETERS_HPP
