@@ -30,6 +30,7 @@ int main()
     const int N = POPSIZE * CHROMOSOME;
     const int Nbytes = N * sizeof(int);
 
+    // /*
     //- GPU用変数 idata: 入力、odata: 出力(総和) --------------------------------------------------
 	thrust::device_vector<int> dev_PopulationOdd(N);
 	thrust::device_vector<int> dev_PopulationEven(N);
@@ -203,6 +204,7 @@ int main()
 	free(phost_Parent1);
 	free(phost_Parent2);
     delete prms;
+    // */
 
     return 0;
 }

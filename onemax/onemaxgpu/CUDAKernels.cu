@@ -258,7 +258,11 @@ __global__ void dev_prms_show(void)
     printf("hello\n");
     printf("%d\n", gpuEvoPrms.POPSIZE);
     printf("%d\n", gpuEvoPrms.CHROMOSOME);
+    printf("%d\n", gpuEvoPrms.NUM_OF_GENERATIONS);
     printf("%d\n", gpuEvoPrms.NUM_OF_ELITE);
+    printf("%d\n", gpuEvoPrms.TOURNAMENT_SIZE);
+    printf("%d\n", gpuEvoPrms.NUM_OF_CROSSOVER_POINTS);
+    printf("%f\n", gpuEvoPrms.MUTATION_RATE);
 }
 
 
