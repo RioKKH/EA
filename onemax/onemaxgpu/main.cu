@@ -13,12 +13,10 @@ int main()
     prms->loadParams();
 
     int host_popsize = prms->getPopsize();
-    printf("host_popsize %d\n", host_popsize);
+    // printf("host_popsize %d\n", host_popsize);
     copyToDevice(prms->getEvoPrms());
-    dev_prms_show<<<1, 1>>>();
-	cudaDeviceSynchronize();
-
-
+    // dev_prms_show<<<1, 1>>>();
+	// cudaDeviceSynchronize();
 
     const int POPSIZE = prms->getPopsize();
     const int CHROMOSOME = prms->getChromosome();
@@ -30,7 +28,6 @@ int main()
     const int N = POPSIZE * CHROMOSOME;
     const int Nbytes = N * sizeof(int);
 
-    // /*
     //- GPU用変数 idata: 入力、odata: 出力(総和) --------------------------------------------------
 	thrust::device_vector<int> dev_PopulationOdd(N);
 	thrust::device_vector<int> dev_PopulationEven(N);
@@ -132,9 +129,6 @@ int main()
                 pdev_TournamentFitness);
 		cudaDeviceSynchronize();
 
-		// dev_show<<<1, POPSIZE>>>(pdev_PopulationEven, pdev_Fitness, pdev_SortedFitness, pdev_Parent1, pdev_Parent2);
-		// cudaDeviceSynchronize();
-
 		if (gen % 2 == 0) // Even
 		{
 			crossover<<<1, POPSIZE, POPSIZE * sizeof(int) * 2>>>(
@@ -193,18 +187,12 @@ int main()
 	cudaMemcpy(phost_Parent2, pdev_Parent2, POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
     cudaMemcpy(phost_Population, pdev_PopulationOdd, Nbytes, cudaMemcpyDeviceToHost);
 
-	// cudaMemcpy(phost_Ranks, pdev_SortedId, POPSIZE * sizeof(int), cudaMemcpyHostToHost);
-
-    // cudaFree(pdev_PopulationOdd);
-    // cudaFree(pdev_PopulationEven);
-
     free(phost_Population);
 	free(phost_Fitness);
 	free(phost_SortedId);
 	free(phost_Parent1);
 	free(phost_Parent2);
     delete prms;
-    // */
 
     return 0;
 }

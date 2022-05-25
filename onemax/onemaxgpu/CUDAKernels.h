@@ -49,6 +49,16 @@ __device__ void singlepointCrossover(const int *src,
                                      int parent1,
                                      int parent2);
 
+__device__ void swap(unsigned int &point1,
+                     unsigned int &point2);
+
+__device__ void doublepointsCrossover(const int *src,
+                                     int *dst,
+                                     int tx, 
+                                     curandState localState,
+                                     int parent1,
+                                     int parent2);
+
 __global__ void crossover(const int *src,
                           int *dst,
                           curandState *dev_States,
