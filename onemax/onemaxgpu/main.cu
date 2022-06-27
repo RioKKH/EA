@@ -8,6 +8,16 @@
 
 int main()
 {
+    // 実行時間計測用
+    float elapsed_time = 0.0f;
+    // イベントを取り扱う変数
+    cudaEvent_t start, end;
+    // イベントのクリエイト
+    cudaEventCreate(&start);
+    cudaEventCreate(&end);
+
+    cudaEventRecord(start, 0);
+
     // パラメータ読み込み
     Parameters *prms = new Parameters();
     prms->loadParams();
@@ -181,6 +191,11 @@ int main()
         showPopulationOnCPU(phost_Population, phost_Fitness, phost_Parent1, phost_Parent2, prms);
 #endif // _DEBUG
 	}
+
+    cudaEventRecord(end, 0);
+    cudaEventSynchronize(end);
+    cudaEventElapsedTime(&elapsed_time, start, end);
+    std::cout << "Elapsed Time: " << elapsed_time << std::endl;
 
     cudaMemcpy(phost_Fitness, pdev_Fitness, POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
 	cudaMemcpy(phost_Parent1, pdev_Parent1, POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
