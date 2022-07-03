@@ -16,7 +16,6 @@ int main()
     cudaEventCreate(&start);
     cudaEventCreate(&end);
 
-    cudaEventRecord(start, 0);
 
     // パラメータ読み込み
     Parameters *prms = new Parameters();
@@ -99,6 +98,9 @@ int main()
 	// --------------------------------
 	// Main loop
 	// --------------------------------
+
+    // 実行時間測定開始
+    cudaEventRecord(start, 0);
 
 	// initialize random numbers array for tournament selection
 	// 乱数はトーナメントセレクションで用いられるので、個体の数x2だけあれば良い
