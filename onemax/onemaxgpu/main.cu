@@ -1,17 +1,43 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <cuda.h>
 
+#include "Parameters.hpp"
 #include "CUDAKernels.h"
 #include "Misc.h"
 
-
 int main()
 {
+    // 実行時間計測用
+    float elapsed_time = 0.0f;
+    // イベントを取り扱う変数
+    cudaEvent_t start, end;
+    // イベントのクリエイト
+    cudaEventCreate(&start);
+    cudaEventCreate(&end);
+
+
+    // パラメータ読み込み
+    Parameters *prms = new Parameters();
+    prms->loadParams();
+
+    int host_popsize = prms->getPopsize();
+    // printf("host_popsize %d\n", host_popsize);
+    copyToDevice(prms->getEvoPrms());
+    // dev_prms_show<<<1, 1>>>();
+	// cudaDeviceSynchronize();
+
+    const int POPSIZE = prms->getPopsize();
+    const int CHROMOSOME = prms->getChromosome();
+    const int NUM_OF_GENERATIONS = prms->getNumOfGenerations();
+    const int NUM_OF_ELITE = prms->getNumOfElite();
+    const int TOURNAMENT_SIZE = prms->getTournamentSize();
+    const int NUM_OF_CROSSOVER_POINTS  = prms->getNumOfCrossoverPoints();
+    const float MUTATION_RATE = prms->getMutationRate();
+    const int N = POPSIZE * CHROMOSOME;
+    const int Nbytes = N * sizeof(int);
+
     //- GPU用変数 idata: 入力、odata: 出力(総和) --------------------------------------------------
-    // int *pdev_PopulationOdd;
-    // int *pdev_PopulationEven;
-    // int *pdev_Parent1;
-    // int *pdev_Parent2;
 	thrust::device_vector<int> dev_PopulationOdd(N);
 	thrust::device_vector<int> dev_PopulationEven(N);
 	thrust::device_vector<int> dev_Parent1(POPSIZE);
@@ -19,6 +45,8 @@ int main()
 	thrust::device_vector<int> dev_Fitnesses(POPSIZE);
 	thrust::device_vector<int> dev_SortedFitnesses(POPSIZE);
 	thrust::device_vector<int> dev_SortedId(POPSIZE);
+    thrust::device_vector<int> dev_TournamentIndividuals(TOURNAMENT_SIZE);
+    thrust::device_vector<int> dev_TournamentFitness(TOURNAMENT_SIZE);
 
 	int *pdev_PopulationOdd = thrust::raw_pointer_cast(&dev_PopulationOdd[0]);
 	int *pdev_PopulationEven = thrust::raw_pointer_cast(&dev_PopulationEven[0]);
@@ -27,15 +55,10 @@ int main()
 	int *pdev_Fitness = thrust::raw_pointer_cast(&dev_Fitnesses[0]);
 	int *pdev_SortedFitness = thrust::raw_pointer_cast(&dev_SortedFitnesses[0]);
 	int *pdev_SortedId = thrust::raw_pointer_cast(&dev_SortedId[0]);
-
-    // cudaMalloc((void **)&pdev_PopulationOdd, Nbytes);
-    // cudaMalloc((void **)&pdev_PopulationEven, Nbytes);
-    // cudaMalloc((void **)&pdev_Parent1, POPSIZE * sizeof(int));
-    // cudaMalloc((void **)&pdev_Parent2, POPSIZE * sizeof(int));
+    int *pdev_TournamentIndividuals = thrust::raw_pointer_cast(&dev_TournamentIndividuals[0]);
+    int *pdev_TournamentFitness = thrust::raw_pointer_cast(&dev_TournamentFitness[0]);
 
     //- CPU用変数 ---------------------------------------------------------------------------------
-	// thrust::host_vector<int> host_Population(N);
-	// int *phost_Population = thrust::raw_pointer_cast(&host_Population[0]);
     int *phost_Population;
 	int *phost_Fitness;
 	int *phost_SortedId;
@@ -60,9 +83,8 @@ int main()
 	//- Preparation -------------------------------------------------------------------------------
 
     // CPU側でデータを初期化してGPUへコピー
-	// thrust::generate(host_Population.begin(), host_Population.end(), my_rand);
     phost_Population = (int *)malloc(POPSIZE * CHROMOSOME * sizeof(int));
-    initializePopulationOnCPU(phost_Population);
+    initializePopulationOnCPU(phost_Population, prms);
 	for (int i = 0; i < POPSIZE; ++i)
 	{
 		for (int j = 0; j < CHROMOSOME; ++j)
@@ -76,6 +98,9 @@ int main()
 	// --------------------------------
 	// Main loop
 	// --------------------------------
+
+    // 実行時間測定開始
+    cudaEventRecord(start, 0);
 
 	// initialize random numbers array for tournament selection
 	// 乱数はトーナメントセレクションで用いられるので、個体の数x2だけあれば良い
@@ -105,17 +130,16 @@ int main()
 		thrust::sort_by_key(dev_SortedFitnesses.begin(), dev_SortedFitnesses.end(), dev_SortedId.begin()); 
 
 		selection<<<1, POPSIZE>>>(
-		// selection<<<N/POPSIZE, POPSIZE>>>(
+		// selection<<<N/POPSIZE, POPSIZE>>>(                                                          
 				pdev_Fitness,
 				pdev_SortedId,
 				dev_TournamentStates,
 				pdev_Parent1,
 				pdev_Parent2,
-				gen);
+				gen,
+                pdev_TournamentIndividuals,
+                pdev_TournamentFitness);
 		cudaDeviceSynchronize();
-
-		// dev_show<<<1, POPSIZE>>>(pdev_PopulationEven, pdev_Fitness, pdev_SortedFitness, pdev_Parent1, pdev_Parent2);
-		// cudaDeviceSynchronize();
 
 		if (gen % 2 == 0) // Even
 		{
@@ -154,37 +178,38 @@ int main()
 			cudaDeviceSynchronize();
 		}
 #ifdef _DEBUG
-		cudaMemcpy(phost_Fitness,  pdev_Fitness,  POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
-		cudaMemcpy(phost_SortedId, pdev_SortedId, POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
-		cudaMemcpy(phost_Parent1,  pdev_Parent1,  POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
-		cudaMemcpy(phost_Parent2,  pdev_Parent2,  POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
-		if (gen % 2 == 0)
-		{
-			cudaMemcpy(phost_Population, pdev_PopulationOdd, Nbytes, cudaMemcpyDeviceToHost);
-		}
-		else
-		{
-			cudaMemcpy(phost_Population, pdev_PopulationEven, Nbytes, cudaMemcpyDeviceToHost);
-		}
-		showPopulationOnCPU(phost_Population, phost_Fitness, phost_Parent1, phost_Parent2);
+        cudaMemcpy(phost_Fitness,  pdev_Fitness,  POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
+        cudaMemcpy(phost_SortedId, pdev_SortedId, POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
+        cudaMemcpy(phost_Parent1,  pdev_Parent1,  POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
+        cudaMemcpy(phost_Parent2,  pdev_Parent2,  POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
+        if (gen % 2 == 0)
+        {
+            cudaMemcpy(phost_Population, pdev_PopulationOdd, Nbytes, cudaMemcpyDeviceToHost);
+        }
+        else
+        {
+            cudaMemcpy(phost_Population, pdev_PopulationEven, Nbytes, cudaMemcpyDeviceToHost);
+        }
+        showPopulationOnCPU(phost_Population, phost_Fitness, phost_Parent1, phost_Parent2, prms);
 #endif // _DEBUG
 	}
+
+    cudaEventRecord(end, 0);
+    cudaEventSynchronize(end);
+    cudaEventElapsedTime(&elapsed_time, start, end);
+    std::cout << "Elapsed Time: " << elapsed_time << std::endl;
 
     cudaMemcpy(phost_Fitness, pdev_Fitness, POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
 	cudaMemcpy(phost_Parent1, pdev_Parent1, POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
 	cudaMemcpy(phost_Parent2, pdev_Parent2, POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
     cudaMemcpy(phost_Population, pdev_PopulationOdd, Nbytes, cudaMemcpyDeviceToHost);
 
-	// cudaMemcpy(phost_Ranks, pdev_SortedId, POPSIZE * sizeof(int), cudaMemcpyHostToHost);
-
-    // cudaFree(pdev_PopulationOdd);
-    // cudaFree(pdev_PopulationEven);
-
     free(phost_Population);
 	free(phost_Fitness);
 	free(phost_SortedId);
 	free(phost_Parent1);
 	free(phost_Parent2);
+    delete prms;
 
     return 0;
 }

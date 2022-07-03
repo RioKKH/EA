@@ -8,14 +8,16 @@
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 #include <thrust/device_ptr.h>
+#include "Parameters.hpp"
 
 enum PARENTS {
     MALE    = 0,
     FEMALE  = 1,
 };
 
-__global__ void setup_kernel(curandState *state);
+void copyToDevice(EvolutionParameters cpuEvoPrms);
 
+__global__ void setup_kernel(curandState *state);
 
 __global__ void generate_kernel(curandState *state, float *result);
 
@@ -27,16 +29,30 @@ __device__ int tournamentSelection(const int *fitness,
                                    curandState *dev_States,
                                    const int &ix,
                                    PARENTS mf,
-                                   int gen);
+                                   int gen,
+                                   int *tournament_individual,
+                                   int *tournament_fitness);
 
 __global__ void selection(int *fitness,
                           int *sortedid,
                           curandState *dev_States,
                           int *parent1,
                           int *parent2,
-                          int getn);
+                          int gen,
+                          int *tournament_individual,
+                          int *tournament_fitness);
 
 __device__ void singlepointCrossover(const int *src,
+                                     int *dst,
+                                     int tx, 
+                                     curandState localState,
+                                     int parent1,
+                                     int parent2);
+
+__device__ void swap(unsigned int &point1,
+                     unsigned int &point2);
+
+__device__ void doublepointsCrossover(const int *src,
                                      int *dst,
                                      int tx, 
                                      curandState localState,
@@ -60,6 +76,8 @@ __global__ void dev_show(int *population,
                          int *sortedfitness,
                          int *parent1,
                          int *parent2);
+
+__global__ void dev_prms_show(void);
 
 #endif // CUDA_KERNELS_H
 

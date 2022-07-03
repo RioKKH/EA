@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "CUDAKernels.h"
+#include "Parameters.hpp"
 #include "Misc.h"
 
 
@@ -13,16 +14,20 @@ int my_rand(void)
     return dist(rng);
 }
 
-void initializePopulationOnCPU(int *population)
+void initializePopulationOnCPU(int *population, Parameters *prms)
 {
-    thrust::generate(population, population + N, my_rand);
+    thrust::generate(population, population + prms->getN(), my_rand);
+    // thrust::generate(population, population + N, my_rand);
 
 #ifdef _DEBUG
-    for (int i = 0; i < POPSIZE; ++i)
+    for (int i = 0; i < prms->getPopsize(); ++i)
+    // for (int i = 0; i < POPSIZE; ++i)
 	{
-		for (int j = 0; j < CHROMOSOME; ++j)
+		for (int j = 0; j < prms->getChromosome(); ++j)
+		// for (int j = 0; j < CHROMOSOME; ++j)
 		{
-			printf("%d", population[i * CHROMOSOME + j]);
+			printf("%d", population[i * prms->getChromosome() + j]);
+			// printf("%d", population[i * CHROMOSOME + j]);
 		}
 		printf("\n");
 	}
@@ -30,14 +35,20 @@ void initializePopulationOnCPU(int *population)
 #endif // _DEBUG
 }
 
-void showPopulationOnCPU(int *population, int *fitness, int *parent1, int *parent2)
+void showPopulationOnCPU(int *population, int *fitness,
+                         int *parent1, int *parent2,
+                         Parameters *prms)
+// void showPopulationOnCPU(int *population, int *fitness, int *parent1, int *parent2)
 {
-	for (int i = 0; i < POPSIZE; ++i)
+	for (int i = 0; i < prms->getPopsize(); ++i)
+	// for (int i = 0; i < POPSIZE; ++i)
 	{
 		printf("%d,%d,%d,%d,", i, fitness[i], parent1[i], parent2[i]);
-		for (int j = 0; j < CHROMOSOME; ++j)
+		for (int j = 0; j < prms->getChromosome(); ++j)
+		// for (int j = 0; j < CHROMOSOME; ++j)
 		{
-			printf("%d", population[i * CHROMOSOME + j]);
+			printf("%d", population[i * prms->getChromosome() + j]);
+			// printf("%d", population[i * CHROMOSOME + j]);
 		}
 		printf("\n");
 	}
