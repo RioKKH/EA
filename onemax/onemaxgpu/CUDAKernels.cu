@@ -29,7 +29,9 @@ __constant__ EvolutionParameters gpuEvoPrms;
 
 void copyToDevice(EvolutionParameters cpuEvoPrms)
 {
+#ifdef _DEBUG
     printf("copyToDevice %d\n", cpuEvoPrms.POPSIZE);
+#endif // _DEBUG
     cudaMemcpyToSymbol(gpuEvoPrms,
                        &cpuEvoPrms,
                        sizeof(EvolutionParameters));
