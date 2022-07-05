@@ -17,4 +17,6 @@ void showPopulationOnCPU(int *population,
                          int *parent2,
                          Parameters *prms);
 
+void showSummaryOnCPU(int gen, int *fitness, Parameters *prms);
+
 #endif // MISC_H

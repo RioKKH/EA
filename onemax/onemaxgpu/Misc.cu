@@ -53,3 +53,18 @@ void showPopulationOnCPU(int *population, int *fitness,
 		printf("\n");
 	}
 }
+
+void showSummaryOnCPU(int gen, int *fitness, Parameters *prms)
+{
+    int fitnessMax = 0;
+    int fitnessMin = prms->getChromosome();
+    double fitnessAve = 0;
+    for (int i = 0; i < prms->getPopsize(); ++i)
+    {
+        if (fitness[i] < fitnessMin) { fitnessMin = fitness[i]; }
+        if (fitness[i] > fitnessMax) { fitnessMax = fitness[i]; }
+        fitnessAve += fitness[i];
+    }
+    fitnessAve /= prms->getPopsize();
+    printf("%d,%f,%d,%d\n", gen, fitnessAve, fitnessMin, fitnessMax);
+}

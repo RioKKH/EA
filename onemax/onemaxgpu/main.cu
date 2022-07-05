@@ -3,9 +3,7 @@
 #include <cuda.h>
 
 #include "Parameters.hpp"
-#include "CUDAKernels.h"
-#include "Misc.h"
-
+#include "CUDAKernels.h" #include "Misc.h"
 int main()
 {
     // 実行時間計測用
@@ -191,6 +189,7 @@ int main()
             cudaMemcpy(phost_Population, pdev_PopulationEven, Nbytes, cudaMemcpyDeviceToHost);
         }
         showPopulationOnCPU(phost_Population, phost_Fitness, phost_Parent1, phost_Parent2, prms);
+        showSummaryOnCPU(gen, phost_Fitness, prms);
 #endif // _DEBUG
 	}
 
