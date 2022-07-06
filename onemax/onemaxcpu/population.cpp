@@ -177,7 +177,7 @@ void population::alternate()
     evaluate();
     generation++;
 
-    /*
+#ifdef _TREND
     //- Show the result of this generation
     int sum = 0;
     float mean = 0;
@@ -195,7 +195,7 @@ void population::alternate()
 
     // generation, max, min, mean, stdev
     printf("%d,%d,%d,%f,%f\n", generation, ind[N-1]->fitness, ind[0]->fitness, mean, stdev); 
-    */
+#endif // _TREND
 }
 
 
