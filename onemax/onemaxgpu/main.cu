@@ -3,7 +3,8 @@
 #include <cuda.h>
 
 #include "Parameters.hpp"
-#include "CUDAKernels.h" #include "Misc.h"
+#include "CUDAKernels.h"
+#include "Misc.h"
 int main()
 {
     // 実行時間計測用
@@ -83,6 +84,7 @@ int main()
     // CPU側でデータを初期化してGPUへコピー
     phost_Population = (int *)malloc(POPSIZE * CHROMOSOME * sizeof(int));
     initializePopulationOnCPU(phost_Population, prms);
+#ifdef _DEBUG
 	for (int i = 0; i < POPSIZE; ++i)
 	{
 		for (int j = 0; j < CHROMOSOME; ++j)
@@ -91,6 +93,7 @@ int main()
 		}
 		printf("\n");
 	}
+#endif // _DEBUG
     cudaMemcpy(pdev_PopulationEven, phost_Population, Nbytes, cudaMemcpyHostToDevice);
 
 	// --------------------------------
@@ -121,7 +124,7 @@ int main()
 
 	for (int gen = 0; gen < NUM_OF_GENERATIONS; ++gen)
 	{
-		printf("#####Gen: %d #######\n", gen);
+		// printf("#####Gen: %d #######\n", gen);
 
 		thrust::copy(thrust::device, dev_Fitnesses.begin(), dev_Fitnesses.end(), dev_SortedFitnesses.begin());
 		thrust::sequence(dev_SortedId.begin(), dev_SortedId.end());
@@ -175,7 +178,7 @@ int main()
 			evaluation<<<POPSIZE, CHROMOSOME, CHROMOSOME*sizeof(int)>>>(pdev_PopulationEven, pdev_Fitness);
 			cudaDeviceSynchronize();
 		}
-#ifdef _DEBUG
+#ifdef _TREND
         cudaMemcpy(phost_Fitness,  pdev_Fitness,  POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
         cudaMemcpy(phost_SortedId, pdev_SortedId, POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
         cudaMemcpy(phost_Parent1,  pdev_Parent1,  POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
@@ -188,9 +191,9 @@ int main()
         {
             cudaMemcpy(phost_Population, pdev_PopulationEven, Nbytes, cudaMemcpyDeviceToHost);
         }
-        showPopulationOnCPU(phost_Population, phost_Fitness, phost_Parent1, phost_Parent2, prms);
+        // showPopulationOnCPU(phost_Population, phost_Fitness, phost_Parent1, phost_Parent2, prms);
         showSummaryOnCPU(gen, phost_Fitness, prms);
-#endif // _DEBUG
+#endif // _TREND
 	}
 
     cudaEventRecord(end, 0);

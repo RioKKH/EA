@@ -194,7 +194,7 @@ void population::alternate()
     stdev = sqrt(var / (pop_size - 1));
 
     // generation, max, min, mean, stdev
-    printf("%d,%d,%d,%f,%f\n", generation, ind[N-1]->fitness, ind[0]->fitness, mean, stdev); 
+    printf("%d,%d,%d,%f,%f\n", generation, mean, ind[N-1]->fitness, ind[0]->fitness, stdev); 
 #endif // _TREND
 }
 
