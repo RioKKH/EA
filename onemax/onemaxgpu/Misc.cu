@@ -58,7 +58,10 @@ void showSummaryOnCPU(int gen, int *fitness, Parameters *prms)
 {
     int fitnessMax = 0;
     int fitnessMin = prms->getChromosome();
-    double fitnessAve = 0;
+    float fitnessAve = 0.0f;
+    float fitnessVar = 0.0f;
+    float fitnessStdev = 0.0f;
+
     for (int i = 0; i < prms->getPopsize(); ++i)
     {
         if (fitness[i] < fitnessMin) { fitnessMin = fitness[i]; }
@@ -66,5 +69,11 @@ void showSummaryOnCPU(int gen, int *fitness, Parameters *prms)
         fitnessAve += fitness[i];
     }
     fitnessAve /= prms->getPopsize();
-    printf("%d,%f,%d,%d\n", gen, fitnessAve, fitnessMin, fitnessMax);
+    for (int i = 0; i < prms->getPopsize(); ++i)
+    {
+        fitnessVar += ((float)fitness[i] - fitnessAve) * ((float)fitness[i] - fitnessAve);
+    }
+    fitnessStdev = sqrt(fitnessVar / (prms->getPopsize() - 1));
+
+    printf("%d,%f,%d,%d,%f\n", gen, fitnessAve, fitnessMin, fitnessMax, fitnessStdev);
 }
