@@ -199,7 +199,8 @@ int main()
     cudaEventRecord(end, 0);
     cudaEventSynchronize(end);
     cudaEventElapsedTime(&elapsed_time, start, end);
-    std::cout << "Elapsed Time: " << elapsed_time << std::endl;
+    // std::cout << "Elapsed Time: " << elapsed_time << std::endl;
+    std::cout << POPSIZE << "," << CHROMOSOME << "," << elapsed_time << std::endl;
 
     cudaMemcpy(phost_Fitness, pdev_Fitness, POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);
 	cudaMemcpy(phost_Parent1, pdev_Parent1, POPSIZE * sizeof(int), cudaMemcpyDeviceToHost);

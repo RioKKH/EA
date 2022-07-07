@@ -3,11 +3,10 @@
 CWD=$(pwd)
 FILENAME=onemax_prms.dat
 ORIGINAL=${FILENAME}.org
-GenomeLength=$(seq 32 32 512)
-PopulationSize=$(seq 32 32 512)
+GenomeLength=$(seq 32 32 1024)
+PopulationSize=$(seq 32 32 1024)
 
 CATLOG=${CWD}/cat.dat
-RESULT=${CWD}/result3.dat
 
 if [ ! -f ${ORIGINAL} ]; then
 	cp -p ${FILENAME} ${ORIGINAL}
@@ -19,7 +18,7 @@ for genome in ${GenomeLength}; do
 		# sed -i "s/^GEN_MAX.*$/GEN_MAX ${genome}/" ${FILENAME}
 		sed -i "s/^POP_SIZE.*$/POP_SIZE ${popsize}/" ${FILENAME}
 		cat ${FILENAME} 2>> ${CATLOG}
-		./onemax >> ${RESULT}
+		./onemax >> CPU_${popsize}_${genome}.csv 
 		sleep 0.1
 	done
 done
