@@ -13,11 +13,14 @@ double cpuSecond() {
 int main(int argc, char **argv)
 {
     int gen_max = 0;
-    // int pop_size = 0;
+    int pop_size = 0;
+    int chromosome = 0;
 
     Parameters *prms;
     prms = new Parameters();
     gen_max = prms->getGenMax();
+    pop_size = prms->getPopSize();
+    chromosome = prms->getNumberOfChromosome();
 
     srand((unsigned int)time(NULL));
     // std::cout << "!!!Start!!!" << std::endl;;
@@ -25,12 +28,12 @@ int main(int argc, char **argv)
     population *pop;
     pop = new population(prms);
 
-    // double iStart = cpuSecond();
+    double iStart = cpuSecond();
     for (int i = 1; i <= gen_max; i++) {
         pop->alternate();
     }
-    // double iElaps = cpuSecond() - iStart;
-    // std::cout << iElaps << std::endl;
+    double iElaps = cpuSecond() - iStart;
+    std::cout << pop_size << "," << chromosome << "," << iElaps << std::endl;
     // pop->print_result();
 
     // delete pointers
