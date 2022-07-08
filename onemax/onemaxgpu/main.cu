@@ -64,10 +64,10 @@ int main()
 	int *phost_Parent1;
 	int *phost_Parent2;
 
-    phost_Fitness       = (int *)malloc(POPSIZE * sizeof(int));
-	phost_SortedId   = (int *)malloc(POPSIZE * sizeof(int));
-	phost_Parent1       = (int *)malloc(POPSIZE * sizeof(int));
-	phost_Parent2       = (int *)malloc(POPSIZE * sizeof(int));
+    phost_Fitness  = (int *)malloc(POPSIZE * sizeof(int));
+	phost_SortedId = (int *)malloc(POPSIZE * sizeof(int));
+	phost_Parent1  = (int *)malloc(POPSIZE * sizeof(int));
+	phost_Parent2  = (int *)malloc(POPSIZE * sizeof(int));
 
 	//- 乱数用変数 --------------------------------------------------------------------------------
 	curandState *dev_TournamentStates;

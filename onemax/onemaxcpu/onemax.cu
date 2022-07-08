@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <sys/time.h>
+#include <cuda.h>
 #include "population.hpp"
 
 double cpuSecond() {
@@ -16,6 +17,12 @@ int main(int argc, char **argv)
     int pop_size = 0;
     int chromosome = 0;
 
+    // 実行時間計測用
+    float elapsed_time = 0.0f;
+    cudaEvent_t start, end;
+    cudaEventCreate(&start);
+    cudaEventCreate(&end);
+
     Parameters *prms;
     prms = new Parameters();
     gen_max = prms->getGenMax();
@@ -28,12 +35,17 @@ int main(int argc, char **argv)
     population *pop;
     pop = new population(prms);
 
-    double iStart = cpuSecond();
+    // double iStart = cpuSecond();
+    cudaEventRecord(start, 0);
     for (int i = 1; i <= gen_max; i++) {
         pop->alternate();
     }
-    double iElaps = cpuSecond() - iStart;
-    std::cout << pop_size << "," << chromosome << "," << iElaps << std::endl;
+    // double iElaps = cpuSecond() - iStart;
+    cudaEventRecord(end, 0);
+    cudaEventSynchronize(end);
+    cudaEventElapsedTime(&elapsed_time, start, end);
+    std::cout << pop_size << "," << chromosome << "," << elapsed_time << std::endl;
+    // std::cout << pop_size << "," << chromosome << "," << iElaps << std::endl;
     // pop->print_result();
 
     // delete pointers

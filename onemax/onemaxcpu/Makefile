@@ -1,12 +1,12 @@
 CC = g++
 NVCC = nvcc
 gcc_options = -std=c++17 -Wall --pedantic-error
+NVCC_OPTIONS = -arch=sm_86
 OPTIONS = -D_TREND
 INCLUDE = -I./include
 
 #program : population.cpp population.hpp\
-#	  individual.cpp individual.hpp\
-#	  floyd.cpp\
+#	  individual.cpp individual.hpp\ floyd.cpp\
 #	  all.h all.h.gch
 #	g++ %(gcc_options) -include all.h $< -o $@
 
@@ -34,7 +34,8 @@ parameters.o : parameters.cpp parameters.hpp
 	#$(CC) $(gcc_options) -include all.h -c $< -o $@
 
 onemax : onemax.cpp individual.o population.o parameters.o #all.h.gch
-	$(CC) $(gcc_options) ${OPTIONS} ${INCLUDE} $^ -o onemax
+	$(NVCC) $(gcc_options) ${NVCC_OPTIONS} ${OPTIONS} ${INCLUDE} $^ -o onemax
+	#$(CC) $(gcc_options) ${OPTIONS} ${INCLUDE} $^ -o onemax
 	#$(CC) $(gcc_options) ${INCLUDE} $^ -o onemax
 	#$(CC) $(gcc_options) -include all.h $^ -o onemax
 
