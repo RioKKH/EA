@@ -25,12 +25,12 @@ int main(int argc, char **argv)
     population *pop;
     pop = new population(prms);
 
-    double iStart = cpuSecond();
+    // double iStart = cpuSecond();
     for (int i = 1; i <= gen_max; i++) {
         pop->alternate();
     }
-    double iElaps = cpuSecond() - iStart;
-    std::cout << iElaps << std::endl;
+    // double iElaps = cpuSecond() - iStart;
+    // std::cout << iElaps << std::endl;
     // pop->print_result();
 
     // delete pointers

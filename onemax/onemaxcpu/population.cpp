@@ -186,6 +186,7 @@ void population::alternate()
 
     for (int i = 0; i < pop_size; i++) {
         sum += ind[i]->fitness;
+        // printf("%d\n", sum);
     }
     mean = (float)sum / pop_size;
     for (int i = 0; i < pop_size; i++) {
@@ -194,7 +195,7 @@ void population::alternate()
     stdev = sqrt(var / (pop_size - 1));
 
     // generation, max, min, mean, stdev
-    printf("%d,%d,%d,%f,%f\n", generation, mean, int[0]->fitness, ind[N-1]->fitness, stdev); 
+    printf("%d,%f,%d,%d,%f\n", generation, mean, ind[0]->fitness, ind[N-1]->fitness, stdev); 
 #endif // _TREND
 }
 
