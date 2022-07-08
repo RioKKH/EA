@@ -25,9 +25,10 @@ individual.o : individual.cpp individual.hpp #all.h.gch
 	#$(CC) $(gcc_options) -include all.h $< -c individual.cpp
 
 population.o : population.cpp population.hpp #all.h.gch
-	$(CC) $(gcc_options) ${OPTIONS} ${INCLUDE} -c $< -o $@
+	$(CC) $(gcc_options) ${INCLUDE} -c $< -o $@
+	#$(CC) $(gcc_options) ${OPTIONS} ${INCLUDE} -c $< -o $@
 	#$(CC) $(gcc_options) -include all.h -c $< -o $@
-	# $(CC) $(gcc_options) -include all.h $< -c population.cpp
+	#$(CC) $(gcc_options) -include all.h $< -c population.cpp
 
 parameters.o : parameters.cpp parameters.hpp
 	$(CC) $(gcc_options) ${OPTIONS} ${INCLUDE} -c $< -o $@
