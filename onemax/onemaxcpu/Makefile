@@ -34,7 +34,7 @@ parameters.o : parameters.cpp parameters.hpp
 	#$(CC) $(gcc_options) -include all.h -c $< -o $@
 
 onemax : onemax.cu individual.o population.o parameters.o #all.h.gch
-	$(NVCC) $(gcc_options) ${NVCC_OPTIONS} ${OPTIONS} ${INCLUDE} $^ -o onemax
+	$(NVCC) ${NVCC_OPTIONS} ${OPTIONS} ${INCLUDE} $^ -o onemax
 	#$(CC) $(gcc_options) ${OPTIONS} ${INCLUDE} $^ -o onemax
 	#$(CC) $(gcc_options) ${INCLUDE} $^ -o onemax
 	#$(CC) $(gcc_options) -include all.h $^ -o onemax
