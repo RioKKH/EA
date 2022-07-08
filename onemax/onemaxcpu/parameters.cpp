@@ -37,6 +37,7 @@ void Parameters::loadParams()
         }
     }
 
+#ifdef _DEBUG
     std::cout << "GEN_MAX: " << gen_max << " "
               << "POP_SIZE: " << pop_size << " "
               << "ELITE: " << elite << " "
@@ -44,6 +45,7 @@ void Parameters::loadParams()
               << "TOURNAMENT_SIZE: " << tournament_size << " "
               << "MUTATE_PROB: " << mutate_prob
               << std::endl;
+#endif // _DEBUG
     infile.close();
 
     return;
