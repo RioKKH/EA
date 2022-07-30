@@ -18,7 +18,8 @@ for genome in ${GenomeLength}; do
 		# sed -i "s/^GEN_MAX.*$/GEN_MAX ${genome}/" ${FILENAME}
 		sed -i "s/^POP_SIZE.*$/POP_SIZE ${popsize}/" ${FILENAME}
 		cat ${FILENAME} 2>> ${CATLOG}
-		./onemax >> CPU_${popsize}_${genome}.csv 
+		./onemax >> CPU_runtime.csv 
+		# ./onemax >> CPU_${popsize}_${genome}.csv 
 		sleep 0.1
 	done
 done

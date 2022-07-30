@@ -11,6 +11,7 @@ for pop in ${POPULATION}; do
 	for chr in ${CHROMOSOME}; do
 		echo ${pop} ${chr}
 		sed -i "s/^CHROMOSOME.*$/CHROMOSOME                ${chr}/" ${PARAMSFILE}
-		./onemax > GPU_${pop}_${chr}.csv
+		./onemax >> GPU_runtime.csv
+		# ./onemax > GPU_${pop}_${chr}.csv
 	done
 done

@@ -117,6 +117,10 @@ int main()
 	evaluation<<<POPSIZE, CHROMOSOME, CHROMOSOME*sizeof(int)>>>(pdev_PopulationEven, pdev_Fitness);
 	cudaDeviceSynchronize();
 
+    cudaEventRecord(end, 0);
+    cudaEventSynchronize(end);
+    cudaEventElapsedTime(&elapsed_time, start, end);
+
 	// dev_show<<<1, POPSIZE>>>(pdev_PopulationEven, pdev_Fitness, pdev_SortedFitness, pdev_Parent1, pdev_Parent2);
 	// cudaDeviceSynchronize();
 
@@ -196,9 +200,9 @@ int main()
 #endif // _TREND
 	}
 
-    cudaEventRecord(end, 0);
-    cudaEventSynchronize(end);
-    cudaEventElapsedTime(&elapsed_time, start, end);
+    // cudaEventRecord(end, 0);
+    // cudaEventSynchronize(end);
+    // cudaEventElapsedTime(&elapsed_time, start, end);
     // std::cout << "Elapsed Time: " << elapsed_time << std::endl;
     std::cout << POPSIZE << "," << CHROMOSOME << "," << elapsed_time << std::endl;
 

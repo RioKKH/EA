@@ -56,6 +56,9 @@ __global__ void generate_kernel(curandState *state, float *result)
 	result[id] = x;
 }
 
+// __global__ void evaluation(int *population, int *fitness)
+// {
+// }
 __global__ void evaluation(int *population, int *fitness)
 {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -121,6 +124,16 @@ __device__ int tournamentSelection(const int *fitness,
 	return tournament_individuals[best_id];
 }
 
+// __global__ void selection(int* fitness,
+//                           int* sortedid,
+//                           curandState *dev_States,
+//                           int* parent1,
+//                           int* parent2,
+//                           int gen,
+//                           int *tournament_individuals,
+//                           int *tournament_fitness)
+// {
+// }
 __global__ void selection(int* fitness,
                           int* sortedid,
                           curandState *dev_States,
@@ -207,6 +220,15 @@ __device__ void doublepointsCrossover(const int *src, int *dst, int tx, curandSt
  * @param[in] parent2	Fitness of parent 2
  * @return void
  */
+// __global__ void crossover(
+// 		const int *src,
+// 		int *dst,
+// 		curandState *dev_States,
+// 		const int *parent1,
+// 		const int *parent2,
+// 		const int gen)
+// {
+// }
 __global__ void crossover(
 		const int *src,
 		int *dst,
@@ -228,6 +250,9 @@ __global__ void crossover(
 	__syncthreads();
 }
 
+// __global__ void mutation(int *population, curandState *dev_States, const int gen)
+// {
+// }
 __global__ void mutation(int *population, curandState *dev_States, const int gen)
 {
 	int id = blockIdx.x * blockDim.x + threadIdx.x;

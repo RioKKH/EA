@@ -1,7 +1,7 @@
 POPSIZE                   1024
 CHROMOSOME                1024
-NUM_OF_GENERATIONS        200
-NUM_OF_ELITE              10
-TOURNAMENT_SIZE           10
+NUM_OF_GENERATIONS        512
+NUM_OF_ELITE              32
+TOURNAMENT_SIZE           128
 NUM_OF_CROSSOVER_POINTS   2
-MUTATION_RATE             0.01
+MUTATION_RATE             0.006
