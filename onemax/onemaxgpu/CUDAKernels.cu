@@ -1,10 +1,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <cuda.h>
+#include <thrust/host_vector.h>
+#include <thrust/device_vector.h>
+#include <thrust/device_ptr.h>
+
+#include "Random123/philox.h"
 #include "CUDAKernels.h"
 #include "Parameters.hpp"
 #include "Misc.h"
 
+
+using namespace r123;
+typedef r123::Philox2x32 RNG_2x32;
+typedef r123::Philox4x32 RNG_4x32;
+// typedef r123::Philox2x64 RNG_2x64;
+// typedef r123::Philox4x32 RNG_4x64;
+
+__constant__ float RANDMAX = 4294967295.0f;
 __constant__ EvolutionParameters gpuEvoPrms;
 
 #define CUDA_CALL(call)                                                    \
@@ -37,12 +51,23 @@ void copyToDevice(EvolutionParameters cpuEvoPrms)
                        sizeof(EvolutionParameters));
 }
 
+// __device__ RNG_2x32::ctr_type generateTwoRndValues(unsigned int key, unsigned int counter);
+inline __device__ RNG_2x32::ctr_type generateTwoRndValues(unsigned int key,
+                                                          unsigned int counter)
+{
+    RNG_2x32 rng;
+    return rng({0, counter}, {key});
+}
+
+/*
 __global__ void setup_kernel(curandState *state)
 {
 	int id = threadIdx.x + blockIdx.x * blockDim.x;
 	curand_init(1234, id, 0, &state[id]);
 }
+*/
 
+/*
 __global__ void generate_kernel(curandState *state, float *result)
 {
 	int id = threadIdx.x + blockIdx.x * blockDim.x;
@@ -55,6 +80,7 @@ __global__ void generate_kernel(curandState *state, float *result)
 	state[id] = localState;
 	result[id] = x;
 }
+*/
 
 __global__ void evaluation(int *population, int *fitness)
 {
@@ -99,7 +125,8 @@ __host__ __device__ int getBestIndividual(const int *fitness)
 }
 
 __device__ int tournamentSelection(const int *fitness,
-                                   curandState *dev_States,
+                                   // curandState *dev_States,
+                                   unsigned int *rand,
                                    const int &ix,
                                    PARENTS mf,
                                    int gen,
@@ -110,12 +137,17 @@ __device__ int tournamentSelection(const int *fitness,
 	unsigned int random_id;
 	unsigned int offset = (gpuEvoPrms.POPSIZE * gpuEvoPrms.TOURNAMENT_SIZE) * mf;
 
+    for (int i = 0; i < gpuEvoPrms.TOURNAMENT_SIZE; ++i)
+    {
+        printf("%d\n", rand[i]);
+    }
+
 	for (int i = 0; i < gpuEvoPrms.TOURNAMENT_SIZE; ++i) {
-		curandState localState = dev_States[ix * gpuEvoPrms.TOURNAMENT_SIZE
-                                            + i + offset + gpuEvoPrms.POPSIZE * gen];
-		random_id = (unsigned int)(curand_uniform(&localState) * (gpuEvoPrms.POPSIZE));
-		tournament_individuals[i] = random_id;
-		tournament_fitness[i] = fitness[random_id]; }
+		// curandState localState = dev_States[ix * gpuEvoPrms.TOURNAMENT_SIZE
+        //                                     + i + offset + gpuEvoPrms.POPSIZE * gen];
+		// random_id = (unsigned int)(curand_uniform(&localState) * (gpuEvoPrms.POPSIZE));
+		// tournament_individuals[i] = random_id;
+		tournament_fitness[i] = fitness[rand[i]]; }
 	best_id = getBestIndividual(tournament_fitness);
 
 	return tournament_individuals[best_id];
@@ -123,29 +155,45 @@ __device__ int tournamentSelection(const int *fitness,
 
 __global__ void selection(int* fitness,
                           int* sortedid,
-                          curandState *dev_States,
+                          // curandState *dev_States,
+                          unsigned int *rand1,
+                          unsigned int *rand2,
                           int* parent1,
                           int* parent2,
                           int gen,
                           int *tournament_individuals,
                           int *tournament_fitness)
 {
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
     int tx = threadIdx.x;
 
+    printf("selection %d\n", gen);
+
+    // const RNG_2x32::ctr_type randomValues = generateTwoRndValues(idx, gen + i);
+    for (int i = 0; i < gpuEvoPrms.TOURNAMENT_SIZE; ++i)
+    {
+        RNG_2x32::ctr_type randomValues = generateTwoRndValues(idx, gen + i);
+        rand1[i] = randomValues.v[0] % gpuEvoPrms.POPSIZE;
+        rand2[i] = randomValues.v[1] % gpuEvoPrms.POPSIZE;
+    }
+
+    //- エリート戦略で所定の数だけ上位の個体を残す
     if (gpuEvoPrms.POPSIZE - gpuEvoPrms.NUM_OF_ELITE <= tx)
     {
         parent1[tx] = sortedid[tx];
         parent2[tx] = sortedid[tx];
     }
+    //- エリート戦略で残す個体以外をトーナメント選択で選ぶ
     else
     {
-        parent1[tx] = tournamentSelection(fitness, dev_States, tx, MALE, gen,
+        parent1[tx] = tournamentSelection(fitness, rand1, tx, MALE, gen,
                                           tournament_individuals, tournament_fitness);
-        parent2[tx] = tournamentSelection(fitness, dev_States, tx, FEMALE, gen,
+        parent2[tx] = tournamentSelection(fitness, rand2, tx, FEMALE, gen,
                                           tournament_individuals, tournament_fitness);
     }
 }
 
+/*
 __device__ void singlepointCrossover(const int *src, int *dst, int tx, curandState localState, int parent1, int parent2) 
 { 
 	int i = 0;
@@ -164,6 +212,7 @@ __device__ void singlepointCrossover(const int *src, int *dst, int tx, curandSta
 		dst[i + offset] = src[parent2 * gpuEvoPrms.CHROMOSOME + i];
 	}
 }
+*/
 
 __device__ void swap(unsigned int &point1, unsigned int &point2)
 {
@@ -172,6 +221,7 @@ __device__ void swap(unsigned int &point1, unsigned int &point2)
     point2 = tmp;
 }
 
+/*
 __device__ void doublepointsCrossover(const int *src, int *dst, int tx, curandState localState, int
         parent1, int parent2)
 {
@@ -198,6 +248,7 @@ __device__ void doublepointsCrossover(const int *src, int *dst, int tx, curandSt
 		dst[i + offset] = src[parent1 * gpuEvoPrms.CHROMOSOME + i];
     }
 }
+*/
 
 
 /**
@@ -207,6 +258,7 @@ __device__ void doublepointsCrossover(const int *src, int *dst, int tx, curandSt
  * @param[in] parent2	Fitness of parent 2
  * @return void
  */
+/*
 __global__ void crossover(
 		const int *src,
 		int *dst,
@@ -227,7 +279,9 @@ __global__ void crossover(
 	// singlepointCrossover(src, dst, tx, localState, s_parent[tx], s_parent[tx + gpuEvoPrms.POPSIZE]);
 	__syncthreads();
 }
+*/
 
+/*
 __global__ void mutation(int *population, curandState *dev_States, const int gen)
 {
 	int id = blockIdx.x * blockDim.x + threadIdx.x;
@@ -238,6 +292,7 @@ __global__ void mutation(int *population, curandState *dev_States, const int gen
 		population[id] ^= 1;
 	}
 }
+*/
 
 __global__ void dev_show(int *population, int *fitness, int *sortedfitness, int *parent1, int *parent2)
 {
