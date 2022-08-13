@@ -23,6 +23,7 @@ void initializePopulationOnCPU(int *population, Parameters *prms)
     for (int i = 0; i < prms->getPopsize(); ++i)
     // for (int i = 0; i < POPSIZE; ++i)
 	{
+        printf("Individual %d:", i);
 		for (int j = 0; j < prms->getChromosome(); ++j)
 		// for (int j = 0; j < CHROMOSOME; ++j)
 		{
