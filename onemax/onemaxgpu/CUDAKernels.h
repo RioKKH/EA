@@ -39,8 +39,8 @@ __device__ int tournamentSelection(const int *fitness,
 __global__ void selection(int *fitness,
                           int *sortedid,
                           // curandState *dev_States,
-                          unsigned int *rand1,
-                          unsigned int *rand2,
+                          float *rand1,
+                          float *rand2,
                           int *parent1,
                           int *parent2,
                           int gen,
@@ -81,11 +81,7 @@ __global__ void mutation(int *population,
                          const int gen);
 */
 
-__global__ void dev_show(int *population, 
-                         int *fitness,
-                         int *sortedfitness,
-                         int *parent1,
-                         int *parent2);
+__global__ void dev_show(int *sortedfitness, int *sortedid);
 
 __global__ void dev_prms_show(void);
 

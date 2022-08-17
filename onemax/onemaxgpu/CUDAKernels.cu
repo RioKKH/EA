@@ -18,7 +18,8 @@ typedef r123::Philox4x32 RNG_4x32;
 // typedef r123::Philox2x64 RNG_2x64;
 // typedef r123::Philox4x32 RNG_4x64;
 
-__constant__ float RANDMAX = 4294967295.0f;
+const float RANDMAX = 4294967295.0f;
+// __constant__ float RANDMAX = 4294967295.0f;
 __constant__ EvolutionParameters gpuEvoPrms;
 
 #define CUDA_CALL(call)                                                    \
@@ -51,7 +52,7 @@ void copyToDevice(EvolutionParameters cpuEvoPrms)
                        sizeof(EvolutionParameters));
 }
 
-// __device__ RNG_2x32::ctr_type generateTwoRndValues(unsigned int key, unsigned int counter);
+__device__ RNG_2x32::ctr_type generateTwoRndValues(unsigned int key, unsigned int counter);
 inline __device__ RNG_2x32::ctr_type generateTwoRndValues(unsigned int key,
                                                           unsigned int counter)
 {
@@ -62,102 +63,103 @@ inline __device__ RNG_2x32::ctr_type generateTwoRndValues(unsigned int key,
 /*
 __global__ void setup_kernel(curandState *state)
 {
-	int id = threadIdx.x + blockIdx.x * blockDim.x;
-	curand_init(1234, id, 0, &state[id]);
+    int id = threadIdx.x + blockIdx.x * blockDim.x;
+    curand_init(1234, id, 0, &state[id]);
 }
 */
 
 /*
 __global__ void generate_kernel(curandState *state, float *result)
 {
-	int id = threadIdx.x + blockIdx.x * blockDim.x;
-	float x;
+    int id = threadIdx.x + blockIdx.x * blockDim.x;
+    float x;
 
-	curandState localState = state[id];
-	
-	x = curand_uniform(&localState);
+    curandState localState = state[id];
+    
+    x = curand_uniform(&localState);
 
-	state[id] = localState;
-	result[id] = x;
+    state[id] = localState;
+    result[id] = x;
 }
 */
 
 __global__ void evaluation(int *population, int *fitness)
 {
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	int tx = threadIdx.x;
-	int stride;
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int tx = threadIdx.x;
+    int stride;
 extern __shared__ volatile int s_idata[];
-	s_idata[tx] = population[i];
-	__syncthreads();
+    s_idata[tx] = population[i];
+    __syncthreads();
 
-	for (stride = 1; stride <= blockDim.x/2; stride <<= 1)
-	{
-		if (tx % (2 * stride) == 0)
-		{
-			s_idata[tx] = s_idata[tx] + s_idata[tx + stride];
-		}
-		__syncthreads();
-	}
+    for (stride = 1; stride <= blockDim.x/2; stride <<= 1)
+    {
+        if (tx % (2 * stride) == 0)
+        {
+            s_idata[tx] = s_idata[tx] + s_idata[tx + stride];
+        }
+        __syncthreads();
+    }
 
-	if (tx == 0)
-	{
-		fitness[blockIdx.x] = s_idata[0];
-	}
+    if (tx == 0)
+    {
+        fitness[blockIdx.x] = s_idata[0];
+    }
 }
 
 __host__ __device__ int getBestIndividual(const int *fitness)
 {
-	int best = 0;
-	int best_index = 0;
-	for (int i = 0; i < gpuEvoPrms.TOURNAMENT_SIZE; ++i)
-	// for (int i = 0; i < gpuEvoPrms->TOURNAMENT_SIZE; ++i)
-	// for (int i = 0; i < TOURNAMENT_SIZE; ++i)
-	{
-		if (fitness[i] > best)
-		{
-			best = fitness[i];
-			best_index = i;
-		}
-	}
+    int best = 0;
+    int best_index = 0;
+    for (int i = 0; i < gpuEvoPrms.TOURNAMENT_SIZE; ++i)
+    // for (int i = 0; i < gpuEvoPrms->TOURNAMENT_SIZE; ++i)
+    // for (int i = 0; i < TOURNAMENT_SIZE; ++i)
+    {
+        if (fitness[i] > best)
+        {
+            best = fitness[i];
+            best_index = i;
+        }
+    }
 
-	return best_index;
+    return best_index;
 }
 
 __device__ int tournamentSelection(const int *fitness,
                                    // curandState *dev_States,
-                                   unsigned int *rand,
+                                   float *rand,
                                    const int &ix,
                                    PARENTS mf,
                                    int gen,
                                    int *tournament_individuals,
                                    int *tournament_fitness)
 {
-	int best_id;
-	unsigned int random_id;
-	unsigned int offset = (gpuEvoPrms.POPSIZE * gpuEvoPrms.TOURNAMENT_SIZE) * mf;
+    int best_id;
+    unsigned int random_id;
+    unsigned int offset = (gpuEvoPrms.POPSIZE * gpuEvoPrms.TOURNAMENT_SIZE) * mf;
 
     for (int i = 0; i < gpuEvoPrms.TOURNAMENT_SIZE; ++i)
     {
-        printf("%d\n", rand[i]);
+        printf("%d\n", int(rand[i]));
     }
 
-	for (int i = 0; i < gpuEvoPrms.TOURNAMENT_SIZE; ++i) {
-		// curandState localState = dev_States[ix * gpuEvoPrms.TOURNAMENT_SIZE
+    for (int i = 0; i < gpuEvoPrms.TOURNAMENT_SIZE; ++i) {
+        // curandState localState = dev_States[ix * gpuEvoPrms.TOURNAMENT_SIZE
         //                                     + i + offset + gpuEvoPrms.POPSIZE * gen];
-		// random_id = (unsigned int)(curand_uniform(&localState) * (gpuEvoPrms.POPSIZE));
-		// tournament_individuals[i] = random_id;
-		tournament_fitness[i] = fitness[rand[i]]; }
-	best_id = getBestIndividual(tournament_fitness);
+        // random_id = (unsigned int)(curand_uniform(&localState) * (gpuEvoPrms.POPSIZE));
+        // tournament_individuals[i] = random_id;
+        tournament_fitness[i] = fitness[int(rand[i])];
+    }
+    best_id = getBestIndividual(tournament_fitness);
 
-	return tournament_individuals[best_id];
+    return tournament_individuals[best_id];
 }
 
 __global__ void selection(int* fitness,
                           int* sortedid,
                           // curandState *dev_States,
-                          unsigned int *rand1,
-                          unsigned int *rand2,
+                          float *rand1,
+                          float *rand2,
                           int* parent1,
                           int* parent2,
                           int gen,
@@ -167,14 +169,22 @@ __global__ void selection(int* fitness,
     int idx = threadIdx.x + blockIdx.x * blockDim.x;
     int tx = threadIdx.x;
 
-    printf("selection %d\n", gen);
-
     // const RNG_2x32::ctr_type randomValues = generateTwoRndValues(idx, gen + i);
     for (int i = 0; i < gpuEvoPrms.TOURNAMENT_SIZE; ++i)
     {
         RNG_2x32::ctr_type randomValues = generateTwoRndValues(idx, gen + i);
-        rand1[i] = randomValues.v[0] % gpuEvoPrms.POPSIZE;
-        rand2[i] = randomValues.v[1] % gpuEvoPrms.POPSIZE;
+        printf("%d,%f,%f,%d,%d\n", tx,
+                                   float(randomValues.v[0]), float(randomValues.v[1]),
+                                   int(randomValues.v[0]) % gpuEvoPrms.POPSIZE,
+                                   int(randomValues.v[1]) % gpuEvoPrms.POPSIZE);
+
+        rand1[i] = int(randomValues.v[0]) % gpuEvoPrms.POPSIZE;
+        rand2[i] = int(randomValues.v[1]) % gpuEvoPrms.POPSIZE;
+    }
+
+    for (int i = 0; i < gpuEvoPrms.TOURNAMENT_SIZE; ++i)
+    {
+        printf("%d,%f,%f\n", tx, rand1[i], rand2[i]);
     }
 
     //- エリート戦略で所定の数だけ上位の個体を残す
@@ -196,21 +206,21 @@ __global__ void selection(int* fitness,
 /*
 __device__ void singlepointCrossover(const int *src, int *dst, int tx, curandState localState, int parent1, int parent2) 
 { 
-	int i = 0;
-	unsigned int point1;
-	// txは個体のインデックス
-	// 従ってこのoffsetはpopulation のオフセットになる。
-	int offset = tx * gpuEvoPrms.CHROMOSOME;
+    int i = 0;
+    unsigned int point1;
+    // txは個体のインデックス
+    // 従ってこのoffsetはpopulation のオフセットになる。
+    int offset = tx * gpuEvoPrms.CHROMOSOME;
 
-	point1 = (unsigned int)(curand_uniform(&localState) * (gpuEvoPrms.CHROMOSOME));
-	for (i = 0; i < point1; ++i)
-	{
-		dst[i + offset] = src[parent1 * gpuEvoPrms.CHROMOSOME + i];
-	}
-	for (; i < gpuEvoPrms.CHROMOSOME; ++i)
-	{
-		dst[i + offset] = src[parent2 * gpuEvoPrms.CHROMOSOME + i];
-	}
+    point1 = (unsigned int)(curand_uniform(&localState) * (gpuEvoPrms.CHROMOSOME));
+    for (i = 0; i < point1; ++i)
+    {
+        dst[i + offset] = src[parent1 * gpuEvoPrms.CHROMOSOME + i];
+    }
+    for (; i < gpuEvoPrms.CHROMOSOME; ++i)
+    {
+        dst[i + offset] = src[parent2 * gpuEvoPrms.CHROMOSOME + i];
+    }
 }
 */
 
@@ -225,85 +235,79 @@ __device__ void swap(unsigned int &point1, unsigned int &point2)
 __device__ void doublepointsCrossover(const int *src, int *dst, int tx, curandState localState, int
         parent1, int parent2)
 {
-	int i = 0;
-	unsigned int point1;
-	unsigned int point2;
-	int offset = tx * gpuEvoPrms.CHROMOSOME;
+    int i = 0;
+    unsigned int point1;
+    unsigned int point2;
+    int offset = tx * gpuEvoPrms.CHROMOSOME;
 
-	point1 = (unsigned int)(curand_uniform(&localState) * (gpuEvoPrms.CHROMOSOME));
-	point2 = (unsigned int)(curand_uniform(&localState) * (gpuEvoPrms.CHROMOSOME));
+    point1 = (unsigned int)(curand_uniform(&localState) * (gpuEvoPrms.CHROMOSOME));
+    point2 = (unsigned int)(curand_uniform(&localState) * (gpuEvoPrms.CHROMOSOME));
 
     if (point1 > point2) swap(point1, point2);
 
     for (; i < point1; ++i)
     {
-		dst[i + offset] = src[parent1 * gpuEvoPrms.CHROMOSOME + i];
+        dst[i + offset] = src[parent1 * gpuEvoPrms.CHROMOSOME + i];
     }
     for (; i < point2; ++i)
     {
-		dst[i + offset] = src[parent2 * gpuEvoPrms.CHROMOSOME + i];
+        dst[i + offset] = src[parent2 * gpuEvoPrms.CHROMOSOME + i];
     }
     for (; i < gpuEvoPrms.CHROMOSOME; ++i)
     {
-		dst[i + offset] = src[parent1 * gpuEvoPrms.CHROMOSOME + i];
+        dst[i + offset] = src[parent1 * gpuEvoPrms.CHROMOSOME + i];
     }
 }
 */
 
 
 /**
- * @param[in] src		Population where current-generation data is stored.
- * @param[out] dst		Populat ion where next-generation data is stored.
- * @param[in] parent1	Fitness of parent 1
- * @param[in] parent2	Fitness of parent 2
+ * @param[in] src        Population where current-generation data is stored.
+ * @param[out] dst        Populat ion where next-generation data is stored.
+ * @param[in] parent1    Fitness of parent 1
+ * @param[in] parent2    Fitness of parent 2
  * @return void
  */
 /*
 __global__ void crossover(
-		const int *src,
-		int *dst,
-		curandState *dev_States,
-		const int *parent1,
-		const int *parent2,
-		const int gen)
+        const int *src,
+        int *dst,
+        curandState *dev_States,
+        const int *parent1,
+        const int *parent2,
+        const int gen)
 {
-	int tx = threadIdx.x;
+    int tx = threadIdx.x;
 
-	extern __shared__ volatile int s_parent[];
-	s_parent[tx] = parent1[tx];
-	s_parent[tx + gpuEvoPrms.POPSIZE] = parent2[tx];
-	__syncthreads();
+    extern __shared__ volatile int s_parent[];
+    s_parent[tx] = parent1[tx];
+    s_parent[tx + gpuEvoPrms.POPSIZE] = parent2[tx];
+    __syncthreads();
 
-	curandState localState = dev_States[tx + gpuEvoPrms.POPSIZE * gen];
-	doublepointsCrossover(src, dst, tx, localState, s_parent[tx], s_parent[tx + gpuEvoPrms.POPSIZE]);
-	// singlepointCrossover(src, dst, tx, localState, s_parent[tx], s_parent[tx + gpuEvoPrms.POPSIZE]);
-	__syncthreads();
+    curandState localState = dev_States[tx + gpuEvoPrms.POPSIZE * gen];
+    doublepointsCrossover(src, dst, tx, localState, s_parent[tx], s_parent[tx + gpuEvoPrms.POPSIZE]);
+    // singlepointCrossover(src, dst, tx, localState, s_parent[tx], s_parent[tx + gpuEvoPrms.POPSIZE]);
+    __syncthreads();
 }
 */
 
 /*
 __global__ void mutation(int *population, curandState *dev_States, const int gen)
 {
-	int id = blockIdx.x * blockDim.x + threadIdx.x;
-	curandState localState = dev_States[id + gpuEvoPrms.POPSIZE * gen];
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    curandState localState = dev_States[id + gpuEvoPrms.POPSIZE * gen];
 
-	if (curand_uniform(&localState) < gpuEvoPrms.MUTATION_RATE)
-	{
-		population[id] ^= 1;
-	}
+    if (curand_uniform(&localState) < gpuEvoPrms.MUTATION_RATE)
+    {
+        population[id] ^= 1;
+    }
 }
 */
 
-__global__ void dev_show(int *population, int *fitness, int *sortedfitness, int *parent1, int *parent2)
+__global__ void dev_show(int *sortedfitness, int *sortedid)
 {
-	int tx = threadIdx.x;
-	if (gpuEvoPrms.POPSIZE - gpuEvoPrms.NUM_OF_ELITE <= tx)
-	{
-		printf("%d,%d,%d,%d\n", tx, sortedfitness[tx], parent1[tx], parent2[tx]);
-	}
-	else {
-		printf("%d,%d,%d,%d\n", tx, fitness[tx], parent1[tx], parent2[tx]);
-	}
+    int tx = threadIdx.x;
+    printf("%d,%d,%d\n", tx, sortedid[tx], sortedfitness[tx]);
 }
 
 __global__ void dev_prms_show(void)
