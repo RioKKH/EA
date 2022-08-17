@@ -2,7 +2,7 @@
 #include <sys/time.h>
 
 #include "Evolution.h"
-// #include "CUDAKernels.h"
+#include "CUDAKernels.h"
 // #include "Parameters.h"
 
 /**
@@ -81,14 +81,22 @@ void GPUEvolution::runEvolutionCycle()
     dim3 blocks;
     dim3 threads;
 
+    blocks.x = 1;
+    blocks.y = 32;
+    blocks.z = 1;
+
+    threads.x = 32;
+    threads.y = 16;
+    threads.z = 1;
+
     // Every chromosome is treated by a single warp, theare are as many warps as individuals per block
     // threads.x = WARP_SIZE;
     // threads.y = CHR_PER_BLOCK;
     // threads.z = 1;
 
-    for (int i = 0; i < 10; ++i)
-    {
-        printf("%d,%d\n", i, getRandomSeed());
-    }
+    printf("Before cuda kernel\n");
+    cudaCallRandomNumber<<<32, 4>>>(getRandomSeed());
+    // cudaCallRandomNumber<<<blocks, threads>>>(getRandomSeed());
+    cudaDeviceSynchronize();
 }
 

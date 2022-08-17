@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "Random123/philox.h"
 
 #include "CUDAKernels.h"
@@ -14,7 +15,7 @@ inline __device__ int getIndex(unsigned int chromosomeIdx,
 */
 
 inline __device__ RNG_2x32::ctr_type generateTwoRndValues(unsigned int key,
-                                                               unsigned int counter)
+                                                          unsigned int counter)
 {
     RNG_2x32 rng;
 
@@ -31,6 +32,14 @@ inline __device__ int getIndex(unsigned int chromosomeIdx,
 
 __global__ void cudaCallRandomNumber(unsigned int randomSeed)
 {
-    size_t i = threadIdx.x + blockIdx.x * blockDim.x;
+    for (int i = 0; i < 10; ++i)
+    {
+        printf("%d\n", i);
+    }
+    // int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    // printf("%d\n", idx);
+
+    // const RNG_2x32::ctr_type randomValues = generateTwoRndValues(idx, randomSeed);
+    // printf("%d, %d\n", randomValues.v[0], randomValues.v[1]);
 }
 
