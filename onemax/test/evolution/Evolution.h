@@ -34,7 +34,7 @@ protected:
 
 
     /// Parameters of evolution
-    // Parameters& mParams;
+    Parameters& mParams;
 
     /// Actual generation.
     // int mActGeneration;

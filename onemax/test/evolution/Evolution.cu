@@ -1,15 +1,18 @@
 #include <stdio.h>
 #include <sys/time.h>
+#include <cuda.h>
+#include <cuda_runtime.h>
 
 #include "Evolution.h"
 #include "CUDAKernels.h"
-// #include "Parameters.h"
+#include "Parameters.h"
 
 /**
  * Constructor of the class
  */
 GPUEvolution::GPUEvolution()
-    : mRandomSeed(0),
+    : mParams(Parameters::
+      mRandomSeed(0),
       mDeviceIdx(0)
 {
     // Select device
