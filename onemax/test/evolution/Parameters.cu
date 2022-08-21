@@ -5,7 +5,7 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include "Parameters.hpp"
+#include "Parameters.h"
 #include "GAregex.hpp"
 
 

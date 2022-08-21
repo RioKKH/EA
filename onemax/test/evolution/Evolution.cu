@@ -11,8 +11,7 @@
  * Constructor of the class
  */
 GPUEvolution::GPUEvolution()
-    : mParams(Parameters::
-      mRandomSeed(0),
+    : mRandomSeed(0),
       mDeviceIdx(0)
 {
     // Select device
@@ -54,9 +53,9 @@ GPUEvolution::~GPUEvolution()
 /**
  * Run Evolution
  */
-void GPUEvolution::run()
+void GPUEvolution::run(Parameters* prms)
 {
-    // initialize();
+    initialize(prms);
     runEvolutionCycle();
 }
 

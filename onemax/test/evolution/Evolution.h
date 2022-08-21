@@ -1,6 +1,8 @@
 #ifndef EVOLUTION_H
 #define EVOLUTION_H
 
+#include "Parameters.h"
+
 class GPUEvolution
 {
 public:
@@ -16,7 +18,7 @@ public:
     virtual ~GPUEvolution();
 
     /// Run evolution
-    void run();
+    void run(Parameters* prms);
 
 protected:
 
@@ -34,7 +36,7 @@ protected:
 
 
     /// Parameters of evolution
-    Parameters& mParams;
+    // Parameters& mParams;
 
     /// Actual generation.
     // int mActGeneration;

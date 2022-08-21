@@ -5,7 +5,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 #include <thrust/device_ptr.h>
-#include "Parameters.hpp"
+#include "Parameters.h"
 
 enum class PARENTS_e : short
 {

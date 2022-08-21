@@ -1,14 +1,19 @@
 #include <stdio.h>
 
 #include "Evolution.h"
+#include "Parameters.h"
 
 /**
  * The main function
  */
 int main(int argc, char** argv)
 {
+    Parameters* prms = new Parameters();
+    prms->loadParams();
+    // printf("%d\n", prms->getChromosome());
+
     GPUEvolution GPU_Evolution;
-    GPU_Evolution.run();
+    GPU_Evolution.run(prms);
 
     return 0;
 } // end of main

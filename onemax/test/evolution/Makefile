@@ -14,7 +14,7 @@ NVCC_OPTIONS = --generate-code arch=compute_52,code=sm_52 \
 
 debug := CFLAGS = -g
 
-APPS = test
+APPS = gpuonemax
 
 TARGET = ${APPS}
 LDFLAGS =
@@ -28,10 +28,13 @@ CUDAKernels.o: CUDAKernels.cu
 Evolution.o: Evolution.cu
 	${NVCC} ${NVCC_OPTIONS} -o $@ -c $<
 
+Parameters.o: Parameters.cu
+	${NVCC} ${NVCC_OPTIONS} -o $@ -c $<
+
 main.o: main.cpp
 	${NVCC} ${NVCC_OPTIONS} -o $@ -c $<
 
-test: main.o CUDAKernels.o Evolution.o
+gpuonemax: main.o CUDAKernels.o Evolution.o Parameters.o
 	${NVCC} ${LDFLAGS} ${NVCC_OPTIONS} $^ -o $@
 
 clean:

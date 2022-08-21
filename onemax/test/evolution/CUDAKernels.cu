@@ -9,7 +9,7 @@
 
 #include "Random123/philox.h"
 #include "CUDAKernels.h"
-#include "Para"
+#include "Parameters.h"
 
 typedef r123::Philox2x32 RNG_2x32;
 typedef r123::Philox4x32 RNG_4x32;
@@ -21,8 +21,10 @@ __constant__ float RANDMAX = 4294967295.0f;
 __constant__ EvolutionParameters gpuEvoPrms;
 
 
+/*
 inline __device__ int getIndex(unsigned int chromosomeIdx,
                                unsigned int geneIdx);
+*/
 
 inline __device__ RNG_2x32::ctr_type generateTwoRndValues(unsigned int key,
                                                           unsigned int counter)
@@ -32,11 +34,15 @@ inline __device__ RNG_2x32::ctr_type generateTwoRndValues(unsigned int key,
     return rng({0, counter}, {key});
 } // end of TwoRandomINTs
 
+
+/*
 inline __device__ int getIndex(unsigned int chromosomeIdx,
                                unsigned int geneIdx)
 {
     return (chromosomeIdx * gpuEvolutionParameters.chromosomeSize + geneIdx);
 }
+*/
+
 
 __global__ void cudaCallRandomNumber(unsigned int randomSeed)
 {
