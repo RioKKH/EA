@@ -1,0 +1,260 @@
+#include <cstdio>
+#include <stdexcept>
+#include <cuda_runtime.h>
+#include <helper_cuda.h>
+
+#include "Population.h"
+#include "CUDAKernels.h"
+
+
+//----- GPUPopulation  ------
+//----- Public methods ------
+/**
+ * Constructor of the class
+ */
+GPUPopulation::GPUPopulation(const int populationSize,
+                             const int chromosomeSize)
+{
+    mHostPopulationHandler.chromosomeSize = chromosomeSize;
+    mHostPopulationHandler.populationSize = populationSize;
+
+    allocateMemory();
+} // end of GPUPopulation
+
+
+/**
+ *  Destructor of the class
+ */
+GPUPopulation::~GPUPopulation()
+{
+    freeMemory();
+} // end of GPUPopulation
+
+
+/**
+ * Copy data from CPU population structure to GPU
+ * Both population must have the same size (sizes not being copied)!!
+ * 
+ * @param HostSource - Source of population data on the host side
+ */
+void GPUPopulation::copyToDevice(const PopulationData* hostPopulation)
+{
+    // Basic data check
+    if (hostPopulation->chromosomeSize != mHostPopulationHandler.chromosomeSize)
+    {
+        throw std::out_of_range("Wrong chromosome size in GPUPopulation::copyToDevice function.");
+    }
+
+    if (hostPopulation->populationSize != mHostPopulationHandler.populationSize)
+    {
+        throw std::out_of_range("Wrong population size in GPUPopulation::copyToDevice function.");
+    }
+
+    // Copy chromosomes
+    checkCudaErrors(
+            cudaMemcpy(mHostPopulationHandler.population,
+                       hostPopulation->population,
+                       sizeof(Gene) * mHostPopulationHandler.chromosomeSize * mHostPopulationHandler.populationSize,
+                       cudaMemcpyHostToDevice)
+            );
+
+    // Copy fitness values
+    checkCudaErrors(
+            cudaMemcpy(mHostPopulationHandler.fitness,
+                       hostPopulation->fitness,
+                       sizeof(Fitness) * mHostPopulationHandler.populationSize,
+                       cudaMemcpyHostToDevice)
+            );
+} // end of copyToDevice
+
+
+/**
+ * Copy data from GPU population structure to CPU.
+ */
+void GPUPopulation::copyFromDevice(PopulationData * hostPopulation)
+{
+    if (hostPopulation->chromosomeSize != mHostPopulationHandler.chromosomeSize)
+    {
+        throw std::out_of_range("Wrong chromosome size in GPUPopulation::copyFromDevice function.");
+    }
+
+    if (hostPopulation->populationSize != mHostPopulationHandler.populationSize)
+    {
+        throw std::out_of_range("Wrong population size in GPUPopulation::copyFromDevice function.");
+    }
+
+    // Copy fitness values
+    checkCudaErrors(
+            cudaMemcpy(hostPopulation->population,
+                       mHostPopulationHandler.population,
+                       sizeof(Gene) * mHostPopulationHandler.chromosomeSize * mHostPopulationHandler.populationSize,
+                       cudaMemcpyDeviceToHost)
+            );
+
+
+    // Copy fitness values
+    checkCudaErrors(
+            cudaMemcpy(hostPopulation->fitness,
+                       mHostPopulationHandler.fitness,
+                       sizeof(Fitness) * mHostPopulationHandler.populationSize,
+                       cudaMemcpyDeviceToHost)
+            );
+} // end of copyFromDevice
+
+
+
+/**
+ * Copy data from different population (both on the same GPU).
+ */
+void GPUPopulation::copyOnDevice(const GPUPopulation* sourceDevicePopulation)
+{
+    if (sourceDevicePopulation->mHostPopulationHandler.chromosomeSize != mHostPopulationHandler.chromosomeSize)
+    {
+        throw std::out_of_range("Wrong chromosome size in GPUPopulation::copyOnDevice function.");
+    }
+
+    if (sourceDevicePopulation->mHostPopulationHandler.populationSize != mHostPopulationHandler.populationSize)
+    {
+        throw std::out_of_range("Wrong population size in GPUPopulation::copyOnDeivce function.");
+    }
+
+    // Copy chromosomes
+    checkCudaErrors(
+            cudaMemcpy(mHostPopulationHandler.population,
+                       sourceDevicePopulation->mHostPopulationHandler.population,
+                       sizeof(Gene) * mHostPopulationHandler.chromosomeSize * mHostPopulationHandler.populationSize,
+                       cudaMemcpyDeviceToDevice)
+            );
+
+    // Copy fitness values
+    checkCudaErrors(
+            cudaMemcpy(mHostPopulationHandler.fitness,
+                       sourceDevicePopulation->mHostPopulationHandler.fitness,
+                       sizeof(Fitness) * mHostPopulationHandler.populationSize,
+                       cudaMemcpyDeviceToDevice)
+            );
+} // end of copyOnDevice
+
+
+/**
+ * Copy a given individual from device to host
+ */
+void GPUPopulation::copyIndividualFromDevice(Gene* individual, int index)
+{
+    checkCudaErrors(
+            cudaMemcpy(individual,
+                       &(mHostPopulationHandler.population[index * mHostPopulationHandler.chromosomeSize]),
+                       sizeof(Gene) * mHostPopulationHandler.chromosomeSize,
+                       cudaMemcpyDeviceToHost)
+            );
+} // end of copyIndividualFromDevice
+
+
+//----- GPUPopulation     ------
+//----- Protected methods ------
+/**
+ * Allocate GPU memory
+ */
+void GPUPopulation::allocateMemory()
+{
+    //- Allocate data structure
+    checkCudaErrors(cudaMalloc<PopulationData>(&mDeviceData, sizeof(PopulationData)));
+
+    //- Allocate Population data
+    checkCudaErrors(cudaMalloc<Gene>(&(mHostPopulationHandler.population),
+                                       sizeof(Gene) * mHostPopulationHandler.chromosomeSize *
+                                          mHostPopulationHandler.populationSize)
+            );
+
+    //- Allocate Fitness data
+    checkCudaErrors(
+            cudaMalloc<Fitness>(&(mHostPopulationHandler.fitness),
+                                  sizeof(Fitness) * mHostPopulationHandler.populationSize)
+            );
+
+    //- Copy structure to GPU
+    checkCudaErrors(
+            cudaMemcpy(mDeviceData, &mHostPopulationHandler, sizeof(PopulationData), cudaMemcpyHostToDevice)
+            );
+} // end of allocateMemory
+
+
+/**
+ * Free memory
+ */
+void GPUPopulation::freeMemory()
+{
+    // Free population data
+    checkCudaErrors(cudaFree(mHostPopulationHandler.population));
+
+    // Free fitness data
+    checkCudaErros(cudaFree(mHostPopulationHandler.fitness));
+
+    // Free whole structure
+    checkCudaErrors(cudaFree(mDeviceData));
+} // end of freeMemory
+
+
+
+//----- CPUPopulation  ------
+//----- Public methods ------
+/**
+ * Constructor of the class.
+ */
+CPUPopulation::CPUPopulation(const int populationSize,
+                             const int chromosomeSize)
+{
+    mHostData = new(PopulationData);
+    mHostData->chromosomeSize = chromosomeSize;
+    mHostData->populationSize = populationSize;
+
+    allocateMemory();
+} // end of CPUPopulation
+
+
+/**
+ * Destructor of the class.
+ */
+CPUPopulation::~CPUPopulation()
+{
+    freeMemory();
+
+    delete mHostData;
+} // end of ~CPUPopulation
+
+
+//----- CPUPopulation     ------
+//----- Protected methods ------
+
+/**
+ * Allocate memory
+ */
+void CPUPopulation::allocateMemory()
+{
+    //- Allocate Population on the host side
+    checkCudaErrors(
+            cudaHostAllo<Gene>(&mHostData->population,
+                               sizeof(Gene) * mHostData->chromosomeSize * mHostData->populationSize,
+                               cudaHostAllocDefault)
+            );
+
+    //- Allocate fitness on the host side
+    checkCudaErros(
+            cudaHostAlloc<Fitness>(&mHostData->fitness,
+                                   sizeof(Fitness) * mHostData->populationSize,
+                                   cudaHostAllocDefault)
+            );
+} // end of allocateMemory
+
+
+/**
+ * Free memory.
+ */
+void CPUPopulation::freeMemory()
+{
+    // Free population on the host side
+    checkCudaErrors(cudaFreeHost(mHostData->population));
+
+    // Free fitness on the host side
+    checkCudaErrors(cudaFreeHost(mHostData->fitness));
+} // end of freeMemory

@@ -113,4 +113,60 @@ private:
     //- Handler on the GPU data
     PopulationData* mDeviceData;
 
+    // Host copy of population
+    PopulationData mHostPopulationHandler;
+}; // end of TGPU_Population
+
+
+/**
+ * @class CPUPopulation
+ * @brief Population stored on the host side.
+ */
+class CPUPopulation
+{
+public:
+    //- Default constructor not allowed.
+    CPUPopulation() = delete;
+
+    //- Default copy constructor not allowed.
+    CPUPopulation(const CPUPopulation&) = delete;
+
+    /**
+     * Constructor
+     * @param [in] populationSize - Number of chromosome.
+     * @param [in] chromosomeSize - Chromosome length.
+     */
+    CPUPopulation(const int populationSize,
+                  const int chromosomeSize);
+
+    //- Destructor
+    virtual ~CPUPopulation();
+
+    //- Get poointer to device population data.
+    PopulationData* getDeviceData()
+    {
+        return mHostData;
+    };
+
+    //- Get pointer to device population data, const version.
+    const PopulationData* getDeviceData() const
+    {
+        return mHostData;
+    };
+
+protected:
+    //- Allocate memory
+    void allocateMemory();
+
+    //- Free memory
+    void freeMemory();
+
+private:
+    //- Host population data
+    PopulationData* mHostData;
+}; // end of CPUPopulation
+
+#endif // POPULATION_H
+
+
 #endif // POPULATION_H

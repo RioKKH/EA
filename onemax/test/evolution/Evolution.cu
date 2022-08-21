@@ -70,7 +70,7 @@ void GPUEvolution::initRandomSeed()
 /**
  * Initialization of the GA
  */
-void GPUEvolution::initialize()
+void GPUEvolution::initialize(Parameters* prms)
 {
     /// TODO
 } // end of initialize

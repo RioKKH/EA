@@ -23,7 +23,7 @@ public:
 protected:
 
     /// Initialize evolution.
-    void initialize();
+    void initialize(Parameters* prms);
 
     /// Run evolution
     void runEvolutionCycle();
