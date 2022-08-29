@@ -12,7 +12,7 @@ int main(int argc, char** argv)
     prms->loadParams();
     // printf("%d\n", prms->getChromosome());
 
-    GPUEvolution GPU_Evolution;
+    GPUEvolution GPU_Evolution(prms);
     GPU_Evolution.run(prms);
 
     return 0;

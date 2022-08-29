@@ -2,12 +2,14 @@
 #define EVOLUTION_H
 
 #include "Parameters.h"
+#include "Population.h"
 
 class GPUEvolution
 {
 public:
     /// Class constructor.
     GPUEvolution();
+    GPUEvolution(Parameters* prms);
 
     /// Copy constructor is not allowed.
     GPUEvolution(const GPUEvolution&) = delete;
@@ -26,7 +28,7 @@ protected:
     void initialize(Parameters* prms);
 
     /// Run evolution
-    void runEvolutionCycle();
+    void runEvolutionCycle(Parameters* prms);
 
     /// Init random generator seed;
     void initRandomSeed();
@@ -42,13 +44,19 @@ protected:
     // int mActGeneration;
 
     /// Number of SM on GPU.
-    // int mMultiprocessorCount;
+    int mMultiprocessorCount;
 
     /// Device Id.
     int mDeviceIdx;
 
     /// Random Generator Seed.
     unsigned int mRandomSeed;
+
+    // Population odd
+    CPUPopulation* mHostPopulationOdd;
+    CPUPopulation* mHostPopulationEven;
+    GPUPopulation* mDevPopulationOdd;
+    GPUPopulation* mDevPopulationEven;
 
 }; // end of GPU_Evolution
 

@@ -167,6 +167,3 @@ private:
 }; // end of CPUPopulation
 
 #endif // POPULATION_H
-
-
-#endif // POPULATION_H

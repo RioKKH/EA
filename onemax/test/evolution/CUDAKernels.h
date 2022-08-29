@@ -5,6 +5,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 #include <thrust/device_ptr.h>
+#include "Population.h"
 #include "Parameters.h"
 
 enum class PARENTS_e : short
@@ -15,9 +16,17 @@ enum class PARENTS_e : short
 
 void copyToDevice(EvolutionParameters cpuEvoPrms);
 
+/**
+ * Check and report CUDA errors.
+ * @param [in] sourceFileName    - Source file where the error happened.
+ * @param [in] sourceLineNumber  - Line where the error happened.
+ */
+void checkAndReportCudaError(const char* sourceFileName,
+                             const int   sourceLineNumber);
 
 
-__global__ void evaluation(int *population, int *fitness);
+__global__ void evaluation(PopulationData* populationData);
+//__global__ void evaluation(int *population, int *fitness);
 
 __host__ __device__ int getBestIndividual(const int *fitness);
 
@@ -62,6 +71,11 @@ __global__ void dev_show(int *population, int *fitness, int *sortedfitness,
 __global__ void dev_prms_show(void);
 
 __global__ void cudaCallRandomNumber(unsigned int randomSeed);
+
+//__global__ void cudaGenerateFirstPopulationKernel(PopulationData* populationDataEven,
+//                                                  PopulationData* populationDataOdd,
+__global__ void cudaGenerateFirstPopulationKernel(PopulationData* populationData,
+                                                  unsigned int    randomSeed);
 
 #endif // CUDA_KERNELS_H
 

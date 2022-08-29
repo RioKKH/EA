@@ -1,8 +1,8 @@
 #include <cstdio>
 #include <stdexcept>
 #include <cuda_runtime.h>
-#include <helper_cuda.h>
 
+#include "Common/helper_cuda.h"
 #include "Population.h"
 #include "CUDAKernels.h"
 
@@ -188,7 +188,7 @@ void GPUPopulation::freeMemory()
     checkCudaErrors(cudaFree(mHostPopulationHandler.population));
 
     // Free fitness data
-    checkCudaErros(cudaFree(mHostPopulationHandler.fitness));
+    checkCudaErrors(cudaFree(mHostPopulationHandler.fitness));
 
     // Free whole structure
     checkCudaErrors(cudaFree(mDeviceData));
@@ -233,13 +233,13 @@ void CPUPopulation::allocateMemory()
 {
     //- Allocate Population on the host side
     checkCudaErrors(
-            cudaHostAllo<Gene>(&mHostData->population,
+            cudaHostAlloc<Gene>(&mHostData->population,
                                sizeof(Gene) * mHostData->chromosomeSize * mHostData->populationSize,
                                cudaHostAllocDefault)
             );
 
     //- Allocate fitness on the host side
-    checkCudaErros(
+    checkCudaErrors(
             cudaHostAlloc<Fitness>(&mHostData->fitness,
                                    sizeof(Fitness) * mHostData->populationSize,
                                    cudaHostAllocDefault)
