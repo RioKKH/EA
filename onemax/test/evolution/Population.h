@@ -6,7 +6,9 @@
 // Data type for Gene.
 typedef unsigned int Gene;
 // Data type for fitness value
-typedef float        Fitness;
+typedef unsigned int Fitness;
+// Data type for the index of elites.
+typedef unsigned int ElitesIdx;
 
 /**
  * @struct PopulationData
@@ -18,11 +20,15 @@ struct PopulationData
     unsigned int populationSize;
     //- Size of chromosome in INFs.
     unsigned int chromosomeSize;
+    //- Size of Elites.
+    unsigned int elitesSize;
 
     //- 1D array of genes (chromosome-based encoding).
     Gene* population;
     //- 1D array of fitness value.
     Fitness* fitness;
+    //- 1D array of index of selected elites
+    ElitesIdx* elitesIdx;
 }; // end of PopulationData
 
 
@@ -44,7 +50,8 @@ public:
      * @param [in] chromosomeSize - Chromosome length.
      */
     GPUPopulation(const int populationSize,
-                  const int chromosomeSize);
+                  const int chromosomeSize,
+                  const int elitesSize);
 
     //- Destructor
     //- virutal destructor: 継承を使い、且つ動的に確保したオブジェクトを
@@ -137,7 +144,8 @@ public:
      * @param [in] chromosomeSize - Chromosome length.
      */
     CPUPopulation(const int populationSize,
-                  const int chromosomeSize);
+                  const int chromosomeSize,
+                  const int elitesSize);
 
     //- Destructor
     virtual ~CPUPopulation();

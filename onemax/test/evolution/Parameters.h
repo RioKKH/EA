@@ -4,13 +4,13 @@
 #include <string>
 
 //- Number of threads per block;
-constexpr int BLOCK_SIZE = 256;
+// constexpr int BLOCK_SIZE = 256;
 
 //- Warp size
 constexpr int WARP_SIZE  = 32;
 
 //- Number of chromosome per block;
-constexpr int CHR_PER_BLOCK = (BLOCK_SIZE / WARP_SIZE);
+// constexpr int CHR_PER_BLOCK = (BLOCK_SIZE / WARP_SIZE);
 
 /**
  * @struct EvolutionParameters

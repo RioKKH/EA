@@ -98,33 +98,36 @@ __global__ void cudaGenerateFirstPopulationKernel(PopulationData* populationData
     while (i < nGenes)
     {
         const RNG_2x32::ctr_type randomValues = generateTwoRndValues(i, randomSeed);
-        populationData->population[i] = randomValues.v[0];
+        populationData->population[i] = randomValues.v[0] % 2;
 
         i += stride;
         if (i < nGenes)
         {
-            populationData->population[i] = randomValues.v[1];
+            populationData->population[i] = randomValues.v[1] % 2;
         }
         i += stride;
     }
 
-    // Zero fitness values
+    //- Zero fitness values
     i = threadIdx.x + blockIdx.x * blockDim.x;
     while (i < populationData->populationSize)
     {
-     populationData->fitness[i] = 0.0f;
-     i += stride;
+        populationData->fitness[i] = 0.0f;
+        i += stride;
     }
 } // end of cudaGeneratePopulationKernel
 
 
 __global__ void evaluation(PopulationData* populationData)
 {
-    int i  = blockIdx.x * blockDim.x + threadIdx.x;
-    int tx = threadIdx.x;
+    int idx  = blockIdx.x * blockDim.x + threadIdx.x;
+    int tx   = threadIdx.x;
     int stride;
+
+    // 共有メモリの配列要素数をカーネル起動時に動的に決定
     extern __shared__ volatile int s_idata[];
-    s_idata[tx] = populationData->population[i];
+
+    s_idata[tx] = populationData->population[idx];
     __syncthreads();
 
     for (stride = 1; stride <= blockDim.x/2; stride <<= 1)
@@ -141,6 +144,91 @@ __global__ void evaluation(PopulationData* populationData)
         populationData->fitness[blockIdx.x] = s_idata[0];
     }
 }
+
+__global__ void pseudo_elitism(PopulationData* populationData)
+{
+    int fitnessIdx             = threadIdx.x; // size of POPULATION
+    int eliteSelectionBlockIdx = blockIdx.x;  // size of NUM_OF_ELITE
+    int total_fitnessIdx       = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride;
+
+    extern __shared__ volatile int s_fitness[];
+    s_fitness[fitnessIdx] = populationData->fitness[fitnessIdx];
+    // s_idata[tx] = populationData->population[idx];
+    __syncthreads();
+
+    for (stride = 1; stride <= blockDim.x/2; stride <<= 1)
+    {
+        if (fitnessIdx % (2 * stride) == 0)
+        {
+            unsigned int index = (s_fitness[fitnessIdx] > s_fitness[fitnessIdx + stride]) ? fitnessIdx : fitnessIdx + stride;
+            s_fitness[fitnessIdx]          = s_fitness[index];
+            s_fitness[fitnessIdx + stride] = index; 
+            // s_idata[tx] = s_idata[tx] + s_idata[tx + stride];
+        }
+        __syncthreads();
+    }
+
+    if (fitnessIdx == 0)
+    {
+        population
+    }
+
+
+
+}
+
+
+__host__ __device__ int getBestIndividual()
+{
+}
+
+
+__global__ void cudaGeneticManipulationKernel(PopulationData* populationDataEven,
+                                              PopulationData* populationDataOdd,
+                                              unsigned int    randomSeed)
+{
+    int geneIdx       = threadIdx.x;
+    int chromosomeIdx = blockIdx.x;
+    int total_geneIdx = threadIdx.x + blockIdx.x * blockDim.x;
+    // int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    int tx  = threadIdx.x;
+
+    // Init randome number generator
+    RNG_4x32 rng_4x32;
+    RNG_4x32::key_type key = {{static_cast<unsigned int>(geneIdx),
+                               static_cast<unsigned int>(chromosomeIdx)}};
+    RNG_4x32::ctr_type counter = {{0, 0, randomSeed, 0xbeeff00d}};
+    RNG_4x32::ctr_type randomValues;
+
+    // Produce new offspring
+    __shared__ int parent1Idx[gpuEvoPrms.POPSIZE];
+    __shared__ int parent2Idx[gpuEvoPrms.POPSIZE];
+    __shared__ int tournamentFitness[gpuEvoPrms.TOUNAMENT_SIZE];
+
+    //- selection
+
+    //- crossover
+
+    //- mutation
+}
+
+__device__ void tournamentSelection(PopulationData* populationData)
+{
+}
+
+__global__ void
+
+__global__ void selection(PopulationData* populationDataEven,
+                          PopulationData* populationDataOdd,
+                          unsigned int randomSeed)
+{
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    int tx  = threadIdx.x;
+    // if (gpuEvoPrms.POPSIZE - gpu
+}
+
+__global__ void k
 
 
 

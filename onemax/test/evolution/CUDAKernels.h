@@ -77,5 +77,15 @@ __global__ void cudaCallRandomNumber(unsigned int randomSeed);
 __global__ void cudaGenerateFirstPopulationKernel(PopulationData* populationData,
                                                   unsigned int    randomSeed);
 
+/**
+ * Genetic manipulation (Selection, Crossover, Mutation)
+ * @param [in]  populationDataEven    - Even-numbered generations of population.
+ * @param [in]  populationDataOdd     - Odd-numbered generations of population.
+ * @param [in]  randomSeed            - Random seed.
+ */
+__global__ void cudaGeneticManipulationKernel(PopulationData* populationDataEven,
+                                              PopulationData* populationDataOdd,
+                                              unsigned int    randomSeed);
+
 #endif // CUDA_KERNELS_H
 

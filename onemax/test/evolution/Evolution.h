@@ -58,6 +58,9 @@ protected:
     GPUPopulation* mDevPopulationOdd;
     GPUPopulation* mDevPopulationEven;
 
+    // Show the population
+    void showPopulation(Parameters* prms);
+
 }; // end of GPU_Evolution
 
 #endif // EVOLUTION_H

@@ -1,5 +1,5 @@
-POPSIZE                   1024
-CHROMOSOME                1024
+POPSIZE                   16
+CHROMOSOME                16
 NUM_OF_GENERATIONS        200
 NUM_OF_ELITE              10
 TOURNAMENT_SIZE           10
