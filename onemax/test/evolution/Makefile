@@ -2,7 +2,9 @@ CC   = gcc
 CPP  = g++
 NVCC = nvcc
 
-NVCC_OPTIONS = --generate-code arch=compute_86,code=sm_86
+NVCC_OPTIONS = --generate-code arch=compute_50,code=sm_50,\
+							 --generate-code arch=compute_52,code=sm_52
+#NVCC_OPTIONS = --generate-code arch=compute_86,code=sm_86
 
 CPPFLAGS=-O3 -Xptxas=-v
 CPPINCLUDE=-I./Common 

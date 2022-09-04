@@ -169,10 +169,10 @@ __global__ void pseudo_elitism(PopulationData* populationData)
         __syncthreads();
     }
 
-    if (fitnessIdx == 0)
-    {
-        population
-    }
+    // if (fitnessIdx == 0)
+    // {
+    //     population
+    // }
 
 
 
@@ -202,9 +202,9 @@ __global__ void cudaGeneticManipulationKernel(PopulationData* populationDataEven
     RNG_4x32::ctr_type randomValues;
 
     // Produce new offspring
-    __shared__ int parent1Idx[gpuEvoPrms.POPSIZE];
-    __shared__ int parent2Idx[gpuEvoPrms.POPSIZE];
-    __shared__ int tournamentFitness[gpuEvoPrms.TOUNAMENT_SIZE];
+    // __shared__ int parent1Idx[gpuEvoPrms.POPSIZE];
+    // __shared__ int parent2Idx[gpuEvoPrms.POPSIZE];
+    // __shared__ int tournamentFitness[gpuEvoPrms.TOUNAMENT_SIZE];
 
     //- selection
 
@@ -217,8 +217,6 @@ __device__ void tournamentSelection(PopulationData* populationData)
 {
 }
 
-__global__ void
-
 __global__ void selection(PopulationData* populationDataEven,
                           PopulationData* populationDataOdd,
                           unsigned int randomSeed)
@@ -227,8 +225,6 @@ __global__ void selection(PopulationData* populationDataEven,
     int tx  = threadIdx.x;
     // if (gpuEvoPrms.POPSIZE - gpu
 }
-
-__global__ void k
 
 
 
