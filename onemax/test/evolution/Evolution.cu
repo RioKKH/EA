@@ -30,16 +30,17 @@ GPUEvolution::GPUEvolution(Parameters* prms)
     cudaGetDeviceProperties(&prop, mDeviceIdx);
 
     // Create populations on CPU
-    mHostPopulationOdd  = new CPUPopulation(prms->getPopsize(), prms->getChromosome());
-    mHostPopulationEven = new CPUPopulation(prms->getPopsize(), prms->getChromosome());
+    mHostPopulationOdd  = new CPUPopulation(prms->getPopsize(), prms->getChromosome(), prms->getNumOfElite());
+    mHostPopulationEven = new CPUPopulation(prms->getPopsize(), prms->getChromosome(), prms->getNumOfElite());
 
-    printf("check: %d, %d\n",
+    printf("check: %d, %d, %d\n",
             mHostPopulationOdd->getDeviceData()->chromosomeSize,
-            mHostPopulationOdd->getDeviceData()->populationSize);
+            mHostPopulationOdd->getDeviceData()->populationSize,
+            mHostPopulationOdd->getDeviceData()->elitesSize);
 
     // Create populations on GPU
-    mDevPopulationOdd  = new GPUPopulation(prms->getPopsize(), prms->getChromosome());
-    mDevPopulationEven = new GPUPopulation(prms->getPopsize(), prms->getChromosome());
+    mDevPopulationOdd  = new GPUPopulation(prms->getPopsize(), prms->getChromosome(), prms->getNumOfElite());
+    mDevPopulationEven = new GPUPopulation(prms->getPopsize(), prms->getChromosome(), prms->getNumOfElite());
 
     // Copy population from CPU to GPU
     mDevPopulationEven->copyToDevice(mHostPopulationEven->getDeviceData());
@@ -47,13 +48,6 @@ GPUEvolution::GPUEvolution(Parameters* prms)
 
     mMultiprocessorCount = prop.multiProcessorCount;
     // mParams.setNumberOfDeviceSMs(prop.multiProcessorCount);
-
-    // Load knapsack data from the file.
-    // mGlobalData.LoadFromFile();
-
-    // Create populations on GPU
-    // mMasterPopulation = new GPUPopulation(mParams.getPopulationsSize(), mParams.getChromosomeSize());
-    // mOffspringPopulation = new GPUPopulation(mParams.getOffspringPopulationsSize(), mParams.getChromosomeSize());
 
     // Create statistics
     // mStatistics = new GPUStatistics();
@@ -102,6 +96,17 @@ void GPUEvolution::initRandomSeed()
  */
 void GPUEvolution::initialize(Parameters* prms)
 {
+    dim3 blocks;
+    dim3 threads;
+
+    blocks.x = prms->getPopsize();
+    blocks.y = 1;
+    blocks.z = 1;
+
+    threads.x = prms->getChromosome();
+    threads.y = 1;
+    threads.z = 1;
+
     copyToDevice(prms->getEvoPrms());
     cudaGenerateFirstPopulationKernel<<<mMultiprocessorCount * 2, 256>>>
                                      (mDevPopulationEven->getDeviceData(),
