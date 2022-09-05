@@ -58,28 +58,23 @@ void GPUPopulation::copyToDevice(const PopulationData* hostPopulation)
     }
 
     //- Copy chromosomes
-    checkCudaErrors(
-            cudaMemcpy(mHostPopulationHandler.population,
-                       hostPopulation->population,
-                       sizeof(Gene) * mHostPopulationHandler.chromosomeSize * mHostPopulationHandler.populationSize,
-                       cudaMemcpyHostToDevice)
-            );
+    checkCudaErrors(cudaMemcpy(mHostPopulationHandler.population,
+                               hostPopulation->population,
+                               sizeof(Gene) * mHostPopulationHandler.chromosomeSize\
+                                            * mHostPopulationHandler.populationSize,
+                               cudaMemcpyHostToDevice));
 
     //- Copy fitness values
-    checkCudaErrors(
-            cudaMemcpy(mHostPopulationHandler.fitness,
-                       hostPopulation->fitness,
-                       sizeof(Fitness) * mHostPopulationHandler.populationSize,
-                       cudaMemcpyHostToDevice)
-            );
+    checkCudaErrors(cudaMemcpy(mHostPopulationHandler.fitness,
+                               hostPopulation->fitness,
+                               sizeof(Fitness) * mHostPopulationHandler.populationSize,
+                               cudaMemcpyHostToDevice));
 
     //- Copy elites indexes
-    checkCudaErrors(
-            cudaMemcpy(mHostPopulationHandler.elitesIdx,
-                       hostPopulation->elitesIdx,
-                       sizeof(ElitesIdx) * mHostPopulationHandler.elitesSize,
-                       cudaMemcpyHostToDevice)
-            );
+    checkCudaErrors(cudaMemcpy(mHostPopulationHandler.elitesIdx,
+                               hostPopulation->elitesIdx,
+                               sizeof(ElitesIdx) * mHostPopulationHandler.elitesSize,
+                               cudaMemcpyHostToDevice));
 } // end of copyToDevice
 
 
@@ -104,28 +99,23 @@ void GPUPopulation::copyFromDevice(PopulationData * hostPopulation)
     }
 
     //- Copy fitness values
-    checkCudaErrors(
-            cudaMemcpy(hostPopulation->population,
-                       mHostPopulationHandler.population,
-                       sizeof(Gene) * mHostPopulationHandler.chromosomeSize * mHostPopulationHandler.populationSize,
-                       cudaMemcpyDeviceToHost)
-            );
+    checkCudaErrors(cudaMemcpy(hostPopulation->population,
+                               mHostPopulationHandler.population,
+                               sizeof(Gene) * mHostPopulationHandler.chromosomeSize
+                                            * mHostPopulationHandler.populationSize,
+                               cudaMemcpyDeviceToHost));
 
     //- Copy fitness values
-    checkCudaErrors(
-            cudaMemcpy(hostPopulation->fitness,
-                       mHostPopulationHandler.fitness,
-                       sizeof(Fitness) * mHostPopulationHandler.populationSize,
-                       cudaMemcpyDeviceToHost)
-            );
+    checkCudaErrors(cudaMemcpy(hostPopulation->fitness,
+                               mHostPopulationHandler.fitness,
+                               sizeof(Fitness) * mHostPopulationHandler.populationSize,
+                               cudaMemcpyDeviceToHost));
 
     //- Copy elites index values
-    checkCudaErrors(
-            cudaMemcpy(hostPopulation->elitesIdx,
-                       mHostPopulationHandler.elitesIdx,
-                       sizeof(ElitesIdx) * mHostPopulationHandler.elitesSize,
-                       cudaMemcpyDeviceToHost)
-            );
+    checkCudaErrors(cudaMemcpy(hostPopulation->elitesIdx,
+                               mHostPopulationHandler.elitesIdx,
+                               sizeof(ElitesIdx) * mHostPopulationHandler.elitesSize,
+                               cudaMemcpyDeviceToHost));
 } // end of copyFromDevice
 
 
@@ -151,28 +141,23 @@ void GPUPopulation::copyOnDevice(const GPUPopulation* sourceDevicePopulation)
     }
 
     // Copy chromosomes
-    checkCudaErrors(
-            cudaMemcpy(mHostPopulationHandler.population,
-                       sourceDevicePopulation->mHostPopulationHandler.population,
-                       sizeof(Gene) * mHostPopulationHandler.chromosomeSize * mHostPopulationHandler.populationSize,
-                       cudaMemcpyDeviceToDevice)
-            );
+    checkCudaErrors(cudaMemcpy(mHostPopulationHandler.population,
+                               sourceDevicePopulation->mHostPopulationHandler.population,
+                               sizeof(Gene) * mHostPopulationHandler.chromosomeSize
+                                            * mHostPopulationHandler.populationSize,
+                               cudaMemcpyDeviceToDevice));
 
     // Copy fitness values
-    checkCudaErrors(
-            cudaMemcpy(mHostPopulationHandler.fitness,
-                       sourceDevicePopulation->mHostPopulationHandler.fitness,
-                       sizeof(Fitness) * mHostPopulationHandler.populationSize,
-                       cudaMemcpyDeviceToDevice)
-            );
+    checkCudaErrors(cudaMemcpy(mHostPopulationHandler.fitness,
+                               sourceDevicePopulation->mHostPopulationHandler.fitness,
+                               sizeof(Fitness) * mHostPopulationHandler.populationSize,
+                               cudaMemcpyDeviceToDevice));
 
     // Copy elites index values
-    checkCudaErrors(
-            cudaMemcpy(mHostPopulationHandler.elitesIdx,
-                       sourceDevicePopulation->mHostPopulationHandler.elitesIdx,
-                       sizeof(ElitesIdx) * mHostPopulationHandler.elitesSize,
-                       cudaMemcpyDeviceToDevice)
-            );
+    checkCudaErrors(cudaMemcpy(mHostPopulationHandler.elitesIdx,
+                               sourceDevicePopulation->mHostPopulationHandler.elitesIdx,
+                               sizeof(ElitesIdx) * mHostPopulationHandler.elitesSize,
+                               cudaMemcpyDeviceToDevice));
 } // end of copyOnDevice
 
 
@@ -185,8 +170,7 @@ void GPUPopulation::copyIndividualFromDevice(Gene* individual, int index)
             cudaMemcpy(individual,
                        &(mHostPopulationHandler.population[index * mHostPopulationHandler.chromosomeSize]),
                        sizeof(Gene) * mHostPopulationHandler.chromosomeSize,
-                       cudaMemcpyDeviceToHost)
-            );
+                       cudaMemcpyDeviceToHost));
 } // end of copyIndividualFromDevice
 
 

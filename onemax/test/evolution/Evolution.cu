@@ -99,32 +99,42 @@ void GPUEvolution::initialize(Parameters* prms)
     dim3 blocks;
     dim3 threads;
 
-    blocks.x = prms->getPopsize();
-    blocks.y = 1;
-    blocks.z = 1;
-
-    threads.x = prms->getChromosome();
-    threads.y = 1;
-    threads.z = 1;
-
     copyToDevice(prms->getEvoPrms());
+
     cudaGenerateFirstPopulationKernel<<<mMultiprocessorCount * 2, 256>>>
                                      (mDevPopulationEven->getDeviceData(),
                                       getRandomSeed());
+    checkAndReportCudaError(__FILE__, __LINE__);
 
     cudaGenerateFirstPopulationKernel<<<mMultiprocessorCount * 2, 256>>>
                                      (mDevPopulationOdd->getDeviceData(),
                                       getRandomSeed());
-    cudaDeviceSynchronize();
+    checkAndReportCudaError(__FILE__, __LINE__);
 
     evaluation<<<prms->getPopsize(),
                  prms->getChromosome(),
                  prms->getChromosome() * sizeof(int)>>>(mDevPopulationEven->getDeviceData());
+    checkAndReportCudaError(__FILE__, __LINE__);
 
     evaluation<<<prms->getPopsize(),
                  prms->getChromosome(),
                  prms->getChromosome() * sizeof(int)>>>(mDevPopulationOdd->getDeviceData());
-    cudaDeviceSynchronize();
+    checkAndReportCudaError(__FILE__, __LINE__);
+
+    // blocks.x  = prms->getNumOfElite();                      blocks.y  = 1; blocks.z  = 1;
+    blocks.x  = prms->getNumOfElite() * 2;                  blocks.y  = 1; blocks.z  = 1;
+    threads.x = prms->getPopsize() / prms->getNumOfElite(); threads.y = 1; threads.z = 1;
+    printf("t:b = %d:%d\n", threads.x, blocks.x);
+
+    pseudo_elitism<<<blocks, threads, prms->getPopsize() * 2 * sizeof(int)>>>(mDevPopulationEven->getDeviceData());
+    // pseudo_elitism<<<blocks, threads, prms->getPopsize() * sizeof(int)>>>(mDevPopulationEven->getDeviceData());
+    checkAndReportCudaError(__FILE__, __LINE__);
+
+    // pseudo_elitism<<<blocks, threads, prms->getPopsize() * sizeof(int)>>>(mDevPopulationOdd->getDeviceData());
+    // checkAndReportCudaError(__FILE__, __LINE__);
+
+    // ホストとデバイスの同期を取る
+    // cudaDeviceSynchronize();
 
 } // end of initialize
 
@@ -164,9 +174,16 @@ void GPUEvolution::showPopulation(Parameters* prms)
 {
     int csize = prms->getChromosome();
     int psize = prms->getPopsize();
+    int esize = prms->getNumOfElite();
 
     mDevPopulationEven->copyFromDevice(mHostPopulationEven->getDeviceData());
     mDevPopulationOdd->copyFromDevice(mHostPopulationOdd->getDeviceData());
+
+    for (int k = 0; k < esize; ++k)
+    {
+        printf("%d,", mHostPopulationEven->getDeviceData()->elitesIdx[k]);
+    }
+    printf("\n");
 
     for (int i = 0; i < psize; ++i)
     {
@@ -176,6 +193,17 @@ void GPUEvolution::showPopulation(Parameters* prms)
             printf("%d", mHostPopulationEven->getDeviceData()->population[psize * i + j]);
         }
         printf(":%d\n", mHostPopulationEven->getDeviceData()->fitness[i]);
+        // for (int k = 0; k < esize; ++k)
+        // {
+        //     if (i == mHostPopulationEven->getDeviceData()->elitesIdx[k])
+        //     {
+        //         printf(",*\n");
+        //     }
+        //     else
+        //     {
+        //         printf("\n");
+        //     }
+        // }
     }
 }
 

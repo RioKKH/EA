@@ -130,52 +130,56 @@ __global__ void evaluation(PopulationData* populationData)
     s_idata[tx] = populationData->population[idx];
     __syncthreads();
 
-    for (stride = 1; stride <= blockDim.x/2; stride <<= 1)
+    for (stride = blockDim.x/2; stride >= 1; stride >>=1)
+    // for (stride = 1; stride <= blockDim.x/2; stride <<= 1)
     {
-        if (tx % (2 * stride) == 0)
+        if (tx < stride)
+        // if (tx % (2 * stride) == 0)
         {
-            s_idata[tx] = s_idata[tx] + s_idata[tx + stride];
+            s_idata[tx] += s_idata[tx + stride];
+            // s_idata[tx] = s_idata[tx] + s_idata[tx + stride];
         }
         __syncthreads();
     }
 
     if (tx == 0)
     {
-        populationData->fitness[blockIdx.x] = s_idata[0];
+        populationData->fitness[blockIdx.x] = s_idata[tx];
     }
 }
 
 __global__ void pseudo_elitism(PopulationData* populationData)
 {
-    int fitnessIdx             = threadIdx.x; // size of POPULATION
-    int eliteSelectionBlockIdx = blockIdx.x;  // size of NUM_OF_ELITE
-    int total_fitnessIdx       = threadIdx.x + blockIdx.x * blockDim.x;
-    int stride;
+    int numOfEliteIdx     = blockIdx.x;  // size of NUM_OF_ELITE
+    int localFitnessIdx   = threadIdx.x; // size of POPULATION / NUM_OF_ELITE
+    int globalFitnessIdx  = threadIdx.x + blockIdx.x * blockDim.x; // size of POPULATION
+    const int OFFSET      = blockDim.x * gridDim.x / 2;
 
     extern __shared__ volatile int s_fitness[];
-    s_fitness[fitnessIdx] = populationData->fitness[fitnessIdx];
-    // s_idata[tx] = populationData->population[idx];
+
+    // 共有メモリの共有範囲は同一ブロック内のスレッド群
+    if (globalFitnessIdx < OFFSET)
+    {
+        s_fitness[localFitnessIdx]          = populationData->fitness[globalFitnessIdx];
+        s_fitness[localFitnessIdx + OFFSET] = globalFitnessIdx;
+    }
     __syncthreads();
 
-    for (stride = 1; stride <= blockDim.x/2; stride <<= 1)
+    for (int stride = OFFSET/2; stride >= 1; stride >>= 1)
     {
-        if (fitnessIdx % (2 * stride) == 0)
+        if (localFitnessIdx < stride)
         {
-            unsigned int index = (s_fitness[fitnessIdx] > s_fitness[fitnessIdx + stride]) ? fitnessIdx : fitnessIdx + stride;
-            s_fitness[fitnessIdx]          = s_fitness[index];
-            s_fitness[fitnessIdx + stride] = index; 
-            // s_idata[tx] = s_idata[tx] + s_idata[tx + stride];
+            unsigned int index = (s_fitness[localFitnessIdx] >= s_fitness[localFitnessIdx + stride]) ? localFitnessIdx : localFitnessIdx + stride;
+            s_fitness[localFitnessIdx] = s_fitness[index];
+            s_fitness[localFitnessIdx + OFFSET] = s_fitness[index + OFFSET];
         }
         __syncthreads();
     }
 
-    // if (fitnessIdx == 0)
-    // {
-    //     population
-    // }
-
-
-
+    if (localFitnessIdx == 0)
+    {
+        populationData->elitesIdx[numOfEliteIdx] = s_fitness[localFitnessIdx + blockDim.x * gridDim.x / 2];
+    }
 }
 
 

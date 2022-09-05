@@ -28,6 +28,8 @@ void checkAndReportCudaError(const char* sourceFileName,
 __global__ void evaluation(PopulationData* populationData);
 //__global__ void evaluation(int *population, int *fitness);
 
+__global__ void pseudo_elitism(PopulationData* populationData);
+
 __host__ __device__ int getBestIndividual(const int *fitness);
 
 __device__ int tournamentSelection(const int *fitness, unsigned int *rand,
