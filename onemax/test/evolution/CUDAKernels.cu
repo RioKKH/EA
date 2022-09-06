@@ -131,13 +131,10 @@ __global__ void evaluation(PopulationData* populationData)
     __syncthreads();
 
     for (stride = blockDim.x/2; stride >= 1; stride >>=1)
-    // for (stride = 1; stride <= blockDim.x/2; stride <<= 1)
     {
         if (tx < stride)
-        // if (tx % (2 * stride) == 0)
         {
             s_idata[tx] += s_idata[tx + stride];
-            // s_idata[tx] = s_idata[tx] + s_idata[tx + stride];
         }
         __syncthreads();
     }
@@ -147,6 +144,7 @@ __global__ void evaluation(PopulationData* populationData)
         populationData->fitness[blockIdx.x] = s_idata[tx];
     }
 }
+
 
 __global__ void pseudo_elitism(PopulationData* populationData)
 {
@@ -170,7 +168,7 @@ __global__ void pseudo_elitism(PopulationData* populationData)
         if (localFitnessIdx < stride)
         {
             unsigned int index = (s_fitness[localFitnessIdx] >= s_fitness[localFitnessIdx + stride]) ? localFitnessIdx : localFitnessIdx + stride;
-            s_fitness[localFitnessIdx] = s_fitness[index];
+            s_fitness[localFitnessIdx]          = s_fitness[index];
             s_fitness[localFitnessIdx + OFFSET] = s_fitness[index + OFFSET];
         }
         __syncthreads();
@@ -178,7 +176,7 @@ __global__ void pseudo_elitism(PopulationData* populationData)
 
     if (localFitnessIdx == 0)
     {
-        populationData->elitesIdx[numOfEliteIdx] = s_fitness[localFitnessIdx + blockDim.x * gridDim.x / 2];
+        populationData->elitesIdx[numOfEliteIdx] = s_fitness[localFitnessIdx + OFFSET];
     }
 }
 
@@ -206,6 +204,11 @@ __global__ void cudaGeneticManipulationKernel(PopulationData* populationDataEven
     RNG_4x32::ctr_type randomValues;
 
     // Produce new offspring
+    extern __shared__ int s[];
+    int *parent1Idx        = s;
+    int *parent2Idx        = (int *)(&parent1Idx[gpuEvoPrms.POPSIZE]);
+    int *tournamentFitness = (int *)(&parent2Idx[gpuEvoPrms.POPSIZE]);
+
     // __shared__ int parent1Idx[gpuEvoPrms.POPSIZE];
     // __shared__ int parent2Idx[gpuEvoPrms.POPSIZE];
     // __shared__ int tournamentFitness[gpuEvoPrms.TOUNAMENT_SIZE];

@@ -121,17 +121,15 @@ void GPUEvolution::initialize(Parameters* prms)
                  prms->getChromosome() * sizeof(int)>>>(mDevPopulationOdd->getDeviceData());
     checkAndReportCudaError(__FILE__, __LINE__);
 
-    // blocks.x  = prms->getNumOfElite();                      blocks.y  = 1; blocks.z  = 1;
     blocks.x  = prms->getNumOfElite() * 2;                  blocks.y  = 1; blocks.z  = 1;
     threads.x = prms->getPopsize() / prms->getNumOfElite(); threads.y = 1; threads.z = 1;
-    printf("t:b = %d:%d\n", threads.x, blocks.x);
+    // printf("t:b = %d:%d\n", threads.x, blocks.x);
 
     pseudo_elitism<<<blocks, threads, prms->getPopsize() * 2 * sizeof(int)>>>(mDevPopulationEven->getDeviceData());
-    // pseudo_elitism<<<blocks, threads, prms->getPopsize() * sizeof(int)>>>(mDevPopulationEven->getDeviceData());
     checkAndReportCudaError(__FILE__, __LINE__);
 
-    // pseudo_elitism<<<blocks, threads, prms->getPopsize() * sizeof(int)>>>(mDevPopulationOdd->getDeviceData());
-    // checkAndReportCudaError(__FILE__, __LINE__);
+    pseudo_elitism<<<blocks, threads, prms->getPopsize() * 2 * sizeof(int)>>>(mDevPopulationOdd->getDeviceData());
+    checkAndReportCudaError(__FILE__, __LINE__);
 
     // ホストとデバイスの同期を取る
     // cudaDeviceSynchronize();
@@ -150,23 +148,19 @@ void GPUEvolution::runEvolutionCycle(Parameters* prms)
     blocks.y = 1;
     blocks.z = 1;
 
-    // threads.x = WARP_SIZE;
-    //threads.y = prms->getChromosome() / WARP_SIZE;
     threads.x = prms->getChromosome();
     threads.y = 1;
     threads.z = 1;
 
-    const int POPSIZE = prms->getPopsize();
-    printf("POPSIZE %d\n", POPSIZE);
+    int shared_memory_size =   prms->getPopsize()        * sizeof(int)
+                             + prms->getPopsize()        * sizeof(int)
+                             + prms->getTournamentSize() * sizeof(int);
 
-    // Every chromosome is treated by a single warp, theare are as many warps as individuals per block
-    // threads.x = WARP_SIZE;
-    // threads.y = CHR_PER_BLOCK;
-    // threads.z = 1;
+    cudaGeneticManipulationKernel<<<blocks, threads, shared_memory_size>>>
+                                 (mDevPopulationEven->getDeviceData(),
+                                  mDevPopulationOdd->getDeviceData(),
+                                  getRandomSeed());
 
-    printf("Before cuda kernel\n");
-    cudaCallRandomNumber<<<32, 4>>>(getRandomSeed());
-    // cudaCallRandomNumber<<<blocks, threads>>>(getRandomSeed());
     cudaDeviceSynchronize();
 }
 
