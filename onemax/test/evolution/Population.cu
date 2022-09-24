@@ -233,8 +233,8 @@ CPUPopulation::CPUPopulation(const int populationSize,
                              const int elitesSize)
 {
     mHostData = new(PopulationData);
-    mHostData->chromosomeSize = chromosomeSize;
     mHostData->populationSize = populationSize;
+    mHostData->chromosomeSize = chromosomeSize;
     mHostData->elitesSize     = elitesSize;
 
     allocateMemory();
@@ -260,11 +260,12 @@ CPUPopulation::~CPUPopulation()
  */
 void CPUPopulation::allocateMemory()
 {
+    printf("num of population elements: %d\n", mHostData->chromosomeSize * mHostData->populationSize);
     //- Allocate Population on the host side
     checkCudaErrors(
             cudaHostAlloc<Gene>(&mHostData->population,
-                               sizeof(Gene) * mHostData->chromosomeSize * mHostData->populationSize,
-                               cudaHostAllocDefault)
+                                sizeof(Gene) * mHostData->chromosomeSize * mHostData->populationSize,
+                                cudaHostAllocDefault)
             );
 
     //- Allocate fitness on the host side

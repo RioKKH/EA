@@ -53,10 +53,10 @@ protected:
     unsigned int mRandomSeed;
 
     // Population odd
-    CPUPopulation* mHostPopulationOdd;
-    CPUPopulation* mHostPopulationEven;
-    GPUPopulation* mDevPopulationOdd;
-    GPUPopulation* mDevPopulationEven;
+    CPUPopulation* mHostParentPopulation;
+    CPUPopulation* mHostOffspringPopulation;
+    GPUPopulation* mDevParentPopulation;
+    GPUPopulation* mDevOffspringPopulation;
 
     // Show the population
     void showPopulation(Parameters* prms);

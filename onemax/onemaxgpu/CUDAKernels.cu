@@ -231,7 +231,6 @@ __device__ void swap(unsigned int &point1, unsigned int &point2)
     point2 = tmp;
 }
 
-/*
 __device__ void doublepointsCrossover(const int *src, int *dst, int tx, curandState localState, int
         parent1, int parent2)
 {
@@ -258,7 +257,6 @@ __device__ void doublepointsCrossover(const int *src, int *dst, int tx, curandSt
         dst[i + offset] = src[parent1 * gpuEvoPrms.CHROMOSOME + i];
     }
 }
-*/
 
 
 /**
@@ -291,7 +289,6 @@ __global__ void crossover(
 }
 */
 
-/*
 __global__ void mutation(int *population, curandState *dev_States, const int gen)
 {
     int id = blockIdx.x * blockDim.x + threadIdx.x;
@@ -302,7 +299,6 @@ __global__ void mutation(int *population, curandState *dev_States, const int gen
         population[id] ^= 1;
     }
 }
-*/
 
 __global__ void dev_show(int *sortedfitness, int *sortedid)
 {

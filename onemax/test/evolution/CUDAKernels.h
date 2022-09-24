@@ -30,33 +30,51 @@ __global__ void evaluation(PopulationData* populationData);
 
 __global__ void pseudo_elitism(PopulationData* populationData);
 
-__host__ __device__ int getBestIndividual(const int *fitness);
+inline __device__ int getBestIndividual(const PopulationData* populationData,
+                                                 const int& idx1, const int& idx2,
+                                                 const int& idx3, const int& idx4);
 
-__device__ int tournamentSelection(const int *fitness, unsigned int *rand,
-                                   const int &ix, PARENTS_e mf,
-                                   int gen,
-                                   int *tournament_individual,
-                                   int *tournament_fitness);
-
-__device__ void selection(int *fitness, int *sortedid,
-                          unsigned int *rand1, unsigned int *rand2,
-                          int *parent1, int *parent2,
-                          int gen,
-                          int *tournament_individual,
-                          int *tournament_fitness);
+inline __device__ int tournamentSelection(const PopulationData* populationData,
+                                          const int tournament_size,
+                                          const std::uint32_t& random1,
+                                          const std::uint32_t& random2,
+                                          const std::uint32_t& random3,
+                                          const std::uint32_t& random4);
+                                          // const unsigned int& random1,
+                                          // const unsigned int& random2,
+                                          // const unsigned int& random3,
+                                          // const unsigned int& random4);
 
 __device__ void singlepointCrossover(const int *src, int *dst, int tx,
                                      unsigned int randomSeed,
                                      int parent1,
                                      int parent2);
 
-__device__ void swap(unsigned int &point1,
+inline __device__ void swap(unsigned int &point1,
                      unsigned int &point2);
 
+inline __device__ void doublepointsCrossover(const PopulationData* parentPopulation,
+                                             PopulationData* offspringPopulation,
+                                             const unsigned int& offspringIdx,
+                                             int& parent1Idx,
+                                             int& parent2Idx,
+                                             std::uint32_t& random1,
+                                             std::uint32_t& random2); //,
+                                             // unsigned int& rnadom3,
+                                             // unsigned int& random4);
+
+
+inline __device__ void bitFlipMutation(PopulationData* offspringPopulation,
+                                       std::uint32_t& random1,
+                                       std::uint32_t& random2,
+                                       std::uint32_t& random3,
+                                       std::uint32_t& random4);
+/*
 __device__ void doublepointsCrossover(const int *src, int *dst, int tx,
                                       unsigned int randomSeed,
                                       int parent1,
                                       int parent2);
+*/
 
 __global__ void crossover(const int *src, int *dst,
                           unsigned int randomSeed,
