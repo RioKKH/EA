@@ -59,7 +59,7 @@ protected:
     GPUPopulation* mDevOffspringPopulation;
 
     // Show the population
-    void showPopulation(Parameters* prms);
+    void showPopulation(Parameters* prms, std::uint16_t generation);
 
 }; // end of GPU_Evolution
 

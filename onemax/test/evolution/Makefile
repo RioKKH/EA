@@ -9,6 +9,7 @@ NVCC_OPTIONS = --generate-code arch=compute_50,code=sm_50,\
 CPPFLAGS=-O3 -Xptxas=-v
 CPPINCLUDE=-I./Common 
 CFLAGS=
+#debug=
 debug= -g -D_DEBUG
 
 APPS = gpuonemax
