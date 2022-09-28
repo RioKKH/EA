@@ -83,17 +83,32 @@ GPUEvolution::~GPUEvolution()
  */
 void GPUEvolution::run(Parameters* prms)
 {
+    // 実行時間計測用
+    float elapsed_time = 0.0f;
+    // イベントを取り扱う変数
+    cudaEvent_t start, end;
+    // イベントのクリエイト
+    cudaEventCreate(&start);
+    cudaEventCreate(&end);
+
     std::uint16_t generation = 0;
     initialize(prms);
 
     // showPopulation(prms, generation);
 
+    // 実行時間測定開始
+    cudaEventRecord(start, 0);
     for (generation = 0; generation < prms->getNumOfGenerations(); ++generation)
     {
         // printf("### Number of Generations : %d ###\n", generation);
         runEvolutionCycle(prms);
-        showPopulation(prms, generation);
+        // showPopulation(prms, generation);
     }
+    cudaEventRecord(end, 0);
+    cudaEventSynchronize(end);
+    cudaEventElapsedTime(&elapsed_time, start, end);
+    std::int32_t popsize = static_cast<std::int32_t>(prms->getPopsize());
+    std::cout << popsize << "," << prms->getChromosome() << "," << elapsed_time << std::endl;
 }
 
 

@@ -1,6 +1,6 @@
 POPSIZE                   1024
 CHROMOSOME                1024
-NUM_OF_GENERATIONS        200
+NUM_OF_GENERATIONS        500
 NUM_OF_ELITE              8
 TOURNAMENT_SIZE           4
 NUM_OF_CROSSOVER_POINTS   2
