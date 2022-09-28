@@ -162,6 +162,11 @@ public:
         return mHostData;
     };
 
+    std::int32_t getMax();
+    std::int32_t getMin();
+    double getMean();
+
+
 protected:
     //- Allocate memory
     void allocateMemory();

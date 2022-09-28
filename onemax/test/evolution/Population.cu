@@ -1,5 +1,7 @@
 #include <cstdio>
 #include <stdexcept>
+#include <algorithm>
+#include <numeric>
 #include <cuda_runtime.h>
 
 #include "Common/helper_cuda.h"
@@ -251,6 +253,25 @@ CPUPopulation::~CPUPopulation()
     delete mHostData;
 } // end of ~CPUPopulation
 
+std::int32_t CPUPopulation::getMax()
+{
+    return *std::max_element(mHostData->fitness,
+                             mHostData->fitness + mHostData->populationSize);
+}
+
+std::int32_t CPUPopulation::getMin()
+{
+    return *std::min_element(mHostData->fitness,
+                             mHostData->fitness + mHostData->populationSize);
+}
+
+double CPUPopulation::getMean()
+{
+    int fitnessSum = std::accumulate(mHostData->fitness,
+                                     mHostData->fitness + mHostData->populationSize, 0);
+    double fitnessAverage = static_cast<double>(fitnessSum) / mHostData->populationSize;
+    return fitnessAverage;
+}
 
 //----- CPUPopulation     ------
 //----- Protected methods ------
