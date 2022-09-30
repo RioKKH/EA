@@ -92,18 +92,24 @@ void GPUEvolution::run(Parameters* prms)
     cudaEventCreate(&end);
 
     std::uint16_t generation = 0;
+    printf("### Initialize\n");
     initialize(prms);
 
-    // showPopulation(prms, generation);
+    showPopulation(prms, generation);
 
     // 実行時間測定開始
     cudaEventRecord(start, 0);
+    printf("### EvoCycle\n");
     for (generation = 0; generation < prms->getNumOfGenerations(); ++generation)
     {
         // printf("### Number of Generations : %d ###\n", generation);
+        // printf("### Generations: %d\n", generation);
         runEvolutionCycle(prms);
         // showPopulation(prms, generation);
     }
+    printf("End of EvoCycle\n");
+    showPopulation(prms, generation);
+
     cudaEventRecord(end, 0);
     cudaEventSynchronize(end);
     cudaEventElapsedTime(&elapsed_time, start, end);
@@ -212,6 +218,7 @@ void GPUEvolution::runEvolutionCycle(Parameters* prms)
                              + prms->getPopsize()        * sizeof(int)
                              + prms->getTournamentSize() * sizeof(int);
 
+
 #ifdef _DEBUG
     printf("Start of cudaGeneticManipulationKernel\n");
     printf("GA: blocks: %d, threads: %d\n", blocks.x, threads.x);
@@ -235,9 +242,6 @@ void GPUEvolution::runEvolutionCycle(Parameters* prms)
     threads.y = 1;
     threads.z = 1;
 
-#ifdef _DEBUG
-    printf("Evaluation: blocks: %d, threads: %d\n", blocks.x, threads.x);
-#endif // _DEBUG
     evaluation<<<blocks, threads, prms->getChromosome() * sizeof(int)>>>(mDevParentPopulation->getDeviceData());
     checkAndReportCudaError(__FILE__, __LINE__);
 
@@ -304,7 +308,6 @@ void GPUEvolution::showPopulation(Parameters* prms, std::uint16_t generation)
                             mHostParentPopulation->getMax(),
                             mHostParentPopulation->getMin());
     // for (int k = 0; k < psize; ++k)
-    /*
     for (int k = 0; k < esize; ++k)
     {
         printf("elite%d : %d\n", k, mHostParentPopulation->getDeviceData()->elitesIdx[k]);
@@ -320,7 +323,6 @@ void GPUEvolution::showPopulation(Parameters* prms, std::uint16_t generation)
         }
         printf(":%d\n", mHostParentPopulation->getDeviceData()->fitness[i]);
     }
-    */
 
     /*
     printf("------------ Offspring:%d ------------ \n", generation);

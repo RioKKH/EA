@@ -69,13 +69,14 @@ __global__ void cudaGenerateFirstPopulationKernel(PopulationData* populationData
     {
         const RNG_2x32::ctr_type randomValues = generateTwoRndValues(idx, randomSeed);
         populationData->population[idx] = randomValues.v[0] % 2;
-        
+
         idx += stride;
         if (idx < nGenes)
         {
             populationData->population[idx] = randomValues.v[1] % 2;
         }
         idx += stride;
+        // printf("%d,%d,%d\n", idx, stride, nGenes);
     }
 
     if (threadIdx.x == 0)
@@ -88,10 +89,12 @@ __global__ void cudaGenerateFirstPopulationKernel(PopulationData* populationData
 
 __global__ void evaluation(PopulationData* populationData)
 {
+    printf("gridmDim.x:%d, blockDim.x:%d, blockIdx.x:%d, threadIdx.x:%d\n", gridDim.x, blockDim.x, blockIdx.x, threadIdx.x);
     int idx  = blockIdx.x * blockDim.x + threadIdx.x;
     int tx   = threadIdx.x;
     int stride;
 
+    // printf("blockIdx.x:%d,threadIdx.x:%d,globalIdx.x:%d,\n", blockIdx.x, threadIdx.x, idx);
     // 共有メモリの配列要素数をカーネル起動時に動的に決定
     extern __shared__ volatile int s_idata[];
 

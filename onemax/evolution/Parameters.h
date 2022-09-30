@@ -54,6 +54,7 @@ public:
     int getNbytes(void) const;
     EvolutionParameters getEvoPrms(void) const;
     void copyToDevice();
+    void showParams() const;
 };
 
 #endif // PARAMETERS_HPP

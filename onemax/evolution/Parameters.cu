@@ -49,16 +49,6 @@ void Parameters::loadParams()
     cpuEvoPrms.N = cpuEvoPrms.POPSIZE * cpuEvoPrms.CHROMOSOME;
     cpuEvoPrms.Nbytes = cpuEvoPrms.N * sizeof(int);
 
-#ifdef _DEBUG
-    std::cout << "POPSIZE: " << cpuEvoPrms.POPSIZE << std::endl;
-    std::cout << "CHROMOSOME: " << cpuEvoPrms.CHROMOSOME << std::endl;
-    std::cout << "NUM_OF_GENERATIONS: " << cpuEvoPrms.NUM_OF_GENERATIONS << std::endl;
-    std::cout << "NUM_OF_ELITE: " << cpuEvoPrms.NUM_OF_ELITE << std::endl;
-    std::cout << "TOURNAMENT_SIZE: " << cpuEvoPrms.TOURNAMENT_SIZE << std::endl;
-    std::cout << "NUM_OF_CROSSOVER_POINTS: " << cpuEvoPrms.NUM_OF_CROSSOVER_POINTS << std::endl;
-    std::cout << "MUTATION_RATE: " << cpuEvoPrms.MUTATION_RATE << std::endl;
-#endif // _DEBUG
-
     infile.close();
 
     return;
@@ -75,4 +65,16 @@ int Parameters::getN() const { return cpuEvoPrms.N; }
 int Parameters::getNbytes() const { return cpuEvoPrms.Nbytes; }
 EvolutionParameters Parameters::getEvoPrms() const { return cpuEvoPrms; }
 
+void Parameters::showParams() const
+{
+    std::cout << "POPSIZE: " << cpuEvoPrms.POPSIZE << std::endl;
+    std::cout << "CHROMOSOME: " << cpuEvoPrms.CHROMOSOME << std::endl;
+    std::cout << "NUM_OF_GENERATIONS: " << cpuEvoPrms.NUM_OF_GENERATIONS << std::endl;
+    std::cout << "NUM_OF_ELITE: " << cpuEvoPrms.NUM_OF_ELITE << std::endl;
+    std::cout << "TOURNAMENT_SIZE: " << cpuEvoPrms.TOURNAMENT_SIZE << std::endl;
+    std::cout << "NUM_OF_CROSSOVER_POINTS: " << cpuEvoPrms.NUM_OF_CROSSOVER_POINTS << std::endl;
+    std::cout << "MUTATION_RATE: " << cpuEvoPrms.MUTATION_RATE << std::endl;
+    std::cout << "N: " << cpuEvoPrms.N << std::endl;
+    std::cout << "Nbytes: " << cpuEvoPrms.Nbytes << std::endl;
+}
 

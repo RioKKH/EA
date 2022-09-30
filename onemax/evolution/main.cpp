@@ -11,6 +11,7 @@ int main(int argc, char** argv)
     Parameters* prms = new Parameters();
     prms->loadParams();
     // printf("%d\n", prms->getChromosome());
+    prms->showParams();
 
     GPUEvolution GPU_Evolution(prms);
     GPU_Evolution.run(prms);

@@ -281,7 +281,7 @@ double CPUPopulation::getMean()
  */
 void CPUPopulation::allocateMemory()
 {
-    printf("num of population elements: %d\n", mHostData->chromosomeSize * mHostData->populationSize);
+    // printf("num of population elements: %d\n", mHostData->chromosomeSize * mHostData->populationSize);
     //- Allocate Population on the host side
     checkCudaErrors(
             cudaHostAlloc<Gene>(&mHostData->population,
