@@ -95,7 +95,7 @@ void GPUEvolution::run(Parameters* prms)
     printf("### Initialize\n");
     initialize(prms);
 
-    showPopulation(prms, generation);
+    // showPopulation(prms, generation);
 
     // 実行時間測定開始
     cudaEventRecord(start, 0);
@@ -108,7 +108,7 @@ void GPUEvolution::run(Parameters* prms)
         // showPopulation(prms, generation);
     }
     printf("End of EvoCycle\n");
-    showPopulation(prms, generation);
+    // showPopulation(prms, generation);
 
     cudaEventRecord(end, 0);
     cudaEventSynchronize(end);

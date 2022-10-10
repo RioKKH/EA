@@ -89,7 +89,7 @@ __global__ void cudaGenerateFirstPopulationKernel(PopulationData* populationData
 
 __global__ void evaluation(PopulationData* populationData)
 {
-    printf("gridmDim.x:%d, blockDim.x:%d, blockIdx.x:%d, threadIdx.x:%d\n", gridDim.x, blockDim.x, blockIdx.x, threadIdx.x);
+    // printf("gridmDim.x:%d, blockDim.x:%d, blockIdx.x:%d, threadIdx.x:%d\n", gridDim.x, blockDim.x, blockIdx.x, threadIdx.x);
     int idx  = blockIdx.x * blockDim.x + threadIdx.x;
     int tx   = threadIdx.x;
     int stride;
