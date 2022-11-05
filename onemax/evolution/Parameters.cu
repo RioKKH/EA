@@ -46,6 +46,7 @@ void Parameters::loadParams()
             cpuEvoPrms.MUTATION_RATE = std::stof(results[1].str());
         }
     }
+
     cpuEvoPrms.N = cpuEvoPrms.POPSIZE * cpuEvoPrms.CHROMOSOME;
     cpuEvoPrms.Nbytes = cpuEvoPrms.N * sizeof(int);
 
