@@ -61,22 +61,23 @@ inline __device__ RNG_2x32::ctr_type generateTwoRndValues(unsigned int key,
 __global__ void cudaGenerateFirstPopulationKernel(PopulationData* populationData,
                                                   unsigned int    randomSeed)
 {
-    unsigned int idx    = threadIdx.x + blockDim.x * blockIdx.x;
-    unsigned int stride = blockDim.x * gridDim.x;
-    const unsigned int nGenes = populationData->chromosomeSize * populationData->populationSize;
+    RNG_4x32 rng_4x32;
+    RNG_4x32::key_type key = {{static_cast<unsigned int>(threadIdx.x), static_cast<unsigned int>(blockIdx.x)}};
+    RNG_4x32::ctr_type counter = {{0, 0, randomSeed, 0xbeeff00d}};
+    RNG_4x32::ctr_type randomValues;
+    // RNG_4x32::ctr_type randomValues = rng_4x32(counter, key);
 
-    while (idx < nGenes)
+    std::uint32_t offset = blockIdx.x * gpuEvoPrms.CHROMOSOME_PSEUDO;
+    std::uint32_t stride = gpuEvoPrms.CHROMOSOME_ACTUAL / 4;
+
+    for (int i = 0; i < gpuEvoPrms.CHROMOSOME_ACTUAL / 4; ++i)
     {
-        const RNG_2x32::ctr_type randomValues = generateTwoRndValues(idx, randomSeed);
-        populationData->population[idx] = randomValues.v[0] % 2;
-
-        idx += stride;
-        if (idx < nGenes)
-        {
-            populationData->population[idx] = randomValues.v[1] % 2;
-        }
-        idx += stride;
-        // printf("%d,%d,%d\n", idx, stride, nGenes);
+        counter.incr();
+        randomValues = rng_4x32(counter, key);
+        populationData->population[offset + stride * 0 + i] = randomValues.v[0] % 2;
+        populationData->population[offset + stride * 1 + i] = randomValues.v[1] % 2;
+        populationData->population[offset + stride * 2 + i] = randomValues.v[2] % 2;
+        populationData->population[offset + stride * 3 + i] = randomValues.v[3] % 2;
     }
 
     if (threadIdx.x == 0)
@@ -156,7 +157,10 @@ __global__ void swapPopulation(PopulationData* parentPopulation,
 {
     std::uint32_t tx  = threadIdx.x;
     std::uint32_t idx = blockDim.x * blockIdx.x + threadIdx.x;
-    std::uint32_t OFFSET = gpuEvoPrms.CHROMOSOME * threadIdx.x;
+    // 遺伝子の入れ替え処理。ActualでもPseudoでもいけそうな気がするが、
+    // 最初はPSEUDOで実装しておく
+    std::uint32_t OFFSET = gpuEvoPrms.CHROMOSOME_PSEUDO * threadIdx.x;
+    // std::uint32_t OFFSET = gpuEvoPrms.CHROMOSOME_ACTUAL * threadIdx.x;
     const std::uint32_t POP_PER_THR = gpuEvoPrms.POPSIZE / blockDim.x;
     // printf("swapPopulation: %d, %d\n", OFFSET, idx);
 
@@ -173,17 +177,20 @@ __global__ void swapPopulation(PopulationData* parentPopulation,
     */
 
     //- In case of <<<N, M>>>
-    if (idx < gpuEvoPrms.CHROMOSOME * gpuEvoPrms.POPSIZE)
+    if (idx < gpuEvoPrms.CHROMOSOME_PSEUDO * gpuEvoPrms.POPSIZE)
+    // if (idx < gpuEvoPrms.CHROMOSOME_ACTUAL * gpuEvoPrms.POPSIZE)
     {
         if (idx % (gpuEvoPrms.POPSIZE / gpuEvoPrms.NUM_OF_ELITE) == 0)
         {
             std::uint32_t ELITE_INDEX  = idx / (gpuEvoPrms.POPSIZE / gpuEvoPrms.NUM_OF_ELITE);
-            std::uint32_t ELITE_OFFSET = gpuEvoPrms.CHROMOSOME * parentPopulation->elitesIdx[ELITE_INDEX]; 
+            std::uint32_t ELITE_OFFSET = gpuEvoPrms.CHROMOSOME_PSEUDO * parentPopulation->elitesIdx[ELITE_INDEX]; 
+            // std::uint32_t ELITE_OFFSET = gpuEvoPrms.CHROMOSOME_ACTUAL * parentPopulation->elitesIdx[ELITE_INDEX]; 
 #ifdef _DEBUG
             printf("swap target:%d, src eindex:%d, src eoffset:%d\n", idx, ELITE_INDEX, ELITE_OFFSET);
 #endif // _DEBUG
             //- エリートの遺伝子を子にコピーする
-            for (int i = 0; i < gpuEvoPrms.CHROMOSOME; ++i)
+            for (int i = 0; i < gpuEvoPrms.CHROMOSOME_PSEUDO; ++i)
+            // for (int i = 0; i < gpuEvoPrms.CHROMOSOME_ACTUAL; ++i)
             {
                 offspringPopulation->population[OFFSET + i] = parentPopulation->population[ELITE_OFFSET + i];
             }
@@ -194,9 +201,11 @@ __global__ void swapPopulation(PopulationData* parentPopulation,
     }
     __syncthreads();
 
-    if (idx < gpuEvoPrms.CHROMOSOME * gpuEvoPrms.POPSIZE)
+    if (idx < gpuEvoPrms.CHROMOSOME_PSEUDO * gpuEvoPrms.POPSIZE)
+    // if (idx < gpuEvoPrms.CHROMOSOME_ACTUAL * gpuEvoPrms.POPSIZE)
     {
-        for (int i = 0; i < gpuEvoPrms.CHROMOSOME * POP_PER_THR; ++i)
+        for (int i = 0; i < gpuEvoPrms.CHROMOSOME_PSEUDO * POP_PER_THR; ++i)
+        // for (int i = 0; i < gpuEvoPrms.CHROMOSOME_ACTUAL * POP_PER_THR; ++i)
         {
             parentPopulation->population[OFFSET + i] = offspringPopulation->population[OFFSET + i];
         }
@@ -358,14 +367,19 @@ inline __device__ void doublepointsCrossover(const PopulationData* parent,
                                              // unsigned int& random3,
                                              // unsigned int& random4)
 {
-    std::uint32_t idx1 = random1 % (parent->chromosomeSize);
-    std::uint32_t idx2 = random2 % (parent->chromosomeSize);
+    // 実際の遺伝子長を用いてクロスオーバーポイントを決定する
+    std::uint32_t idx1 = random1 % (gpuEvoPrms.CHROMOSOME_ACTUAL);
+    std::uint32_t idx2 = random2 % (gpuEvoPrms.CHROMOSOME_ACTUAL);
+    // std::uint32_t idx1 = random1 % (parent->chromosomeSize);
+    // std::uint32_t idx2 = random2 % (parent->chromosomeSize);
     swap(idx1, idx2); // random1 <= random2
 
-    std::uint32_t offset1 = parent1Idx         * gpuEvoPrms.CHROMOSOME;
-    std::uint32_t offset2 = parent2Idx         * gpuEvoPrms.CHROMOSOME;
-    std::uint32_t OFFSET1 = offspringIdx       * gpuEvoPrms.CHROMOSOME;
-    std::uint32_t OFFSET2 = (offspringIdx + 1) * gpuEvoPrms.CHROMOSOME;
+    // オフセットを求める際の遺伝子長はPSEUDOのほうになる。
+    // 一個体の遺伝子として確保した配列はCHROMOSOME_PSEUDOとなる
+    std::uint32_t offset1 = parent1Idx         * gpuEvoPrms.CHROMOSOME_PSEUDO;
+    std::uint32_t offset2 = parent2Idx         * gpuEvoPrms.CHROMOSOME_PSEUDO;
+    std::uint32_t OFFSET1 = offspringIdx       * gpuEvoPrms.CHROMOSOME_PSEUDO;
+    std::uint32_t OFFSET2 = (offspringIdx + 1) * gpuEvoPrms.CHROMOSOME_PSEUDO;
 
 #ifdef _DEBUG
     printf("%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
@@ -376,7 +390,7 @@ inline __device__ void doublepointsCrossover(const PopulationData* parent,
     // std::uint32_t offset2 = 2 * offspringIdx * gpuEvoPrms.CHROMOSOME + gpuEvoPrms.CHROMOSOME;
 
     int i = 0;
-    if (offspringIdx % 2 == 0)
+    if (offspringIdx % 2 == 0) // offspringIdxが偶数の場合
     {
         for (; i < idx1; ++i)
         {
@@ -386,12 +400,15 @@ inline __device__ void doublepointsCrossover(const PopulationData* parent,
         {
             offspring->population[OFFSET1 + i] = parent->population[offset2 + i];
         }
-        for (; i < gpuEvoPrms.CHROMOSOME; ++i)
+        // 確保した遺伝子の最後までコピーをする。実際の遺伝子長を超える部分は0で埋められている
+        // はずなので、2個目のクロスオーバーポイントから後ろはすべてコピーしてしまってよい。
+        for (; i < gpuEvoPrms.CHROMOSOME_PSEUDO; ++i)
+        // for (; i < gpuEvoPrms.CHROMOSOME; ++i)
         {
             offspring->population[OFFSET1 + i] = parent->population[offset1 + i];
         }
     }
-    else if (offspringIdx % 2 == 1)
+    else if (offspringIdx % 2 == 1) // offspringIdxが奇数の場合
     {
         for (; i < idx1; ++i)
         {
@@ -401,106 +418,129 @@ inline __device__ void doublepointsCrossover(const PopulationData* parent,
         {
             offspring->population[OFFSET1 + i] = parent->population[offset1 + i];
         }
-        for (; i < gpuEvoPrms.CHROMOSOME; ++i)
+        // 確保した遺伝子の最後までコピーをする。実際の遺伝子長を超える部分は0で埋められている
+        // はずなので、2個目のクロスオーバーポイントから後ろはすべてコピーしてしまってよい。
+        for (; i < gpuEvoPrms.CHROMOSOME_PSEUDO; ++i)
+        // for (; i < gpuEvoPrms.CHROMOSOME; ++i)
         {
             offspring->population[OFFSET1 + i] = parent->population[offset2 + i];
         }
     }
-
-    /*
-    for (; i < idx1; ++i)
-    {
-        // Offspring1の0~idx1にParent1のGeneをコピーする
-        offspring->population[OFFSET1 + i] = parent->population[offset1 + i];
-        // offspring->population[offset1 + i] = parent->population[offset1 + i];
-        // Offspring2の0~idx1にParent2のGeneをコピーする
-        offspring->population[OFFSET2 + i] = parent->population[offset2 + i];
-        // offspring->population[offset2 + i] = parent->population[offset2 + i];
-    }
-    for (; i < idx2; ++i)
-    {
-        // Offspring1のidx1+1~idx2にParent2のGeneをコピーする
-        offspring->population[OFFSET1 + i] = parent->population[offset2 + i];
-        // offspring->population[offset1 + i] = parent->population[offset2 + i];
-        // Offspring2のidx1+1~idx2にParent1のGeneをコピーする
-        offspring->population[OFFSET2 + i] = parent->population[offset1 + i];
-        // offspring->population[offset2 + i] = parent->population[offset1 + i];
-    }
-    for (; i < gpuEvoPrms.CHROMOSOME; ++i)
-    {
-        // Offspring1のidx2+1~CHROMOSOMEにParent1のGeneをコピーする
-        offspring->population[OFFSET1 + i] = parent->population[offset1 + i];
-        // Offspring2のidx2+1~CHROMOSOMEにParent2のGeneをコピーする
-        offspring->population[OFFSET2 + i] = parent->population[offset2 + i];
-    }
-    */
 }
 
 inline __device__ void bitFlipMutation(PopulationData* offspring,
                                        std::uint32_t& random1, std::uint32_t& random2,
                                        std::uint32_t& random3, std::uint32_t& random4)
 {
-    const float MUTATION_RATE_ADJUSTED = gpuEvoPrms.MUTATION_RATE * gpuEvoPrms.CHROMOSOME / 4.0f;
-    const std::int32_t TOTALGENELENGTH = gpuEvoPrms.CHROMOSOME * gpuEvoPrms.POPSIZE;
+    // 実際の遺伝子長からmutation rateを決めるので、CHROMOSOME_ACTUALとなる
+    const float MUTATION_RATE_ADJUSTED = gpuEvoPrms.MUTATION_RATE * gpuEvoPrms.CHROMOSOME_ACTUAL / 4.0f;
+    // 一方でこちらは配列の全長がわかる必要があるのでCHROMOSOME_PSEUDOとなる
+    const std::int32_t TOTALGENELENGTH = gpuEvoPrms.CHROMOSOME_PSEUDO * gpuEvoPrms.POPSIZE;
+
+    std::uint32_t popidx  = 0;
+    std::uint32_t geneidx = 0;
+    std::uint32_t offset  = 0;
+    /*
+    printf("%f,%f,%f,%f\n", r123::u01fixedpt<float>(random1),
+                            r123::u01fixedpt<float>(random2),
+                            r123::u01fixedpt<float>(random3),
+                            r123::u01fixedpt<float>(random4));
+    */
 
     if (r123::u01fixedpt<float>(random1) < MUTATION_RATE_ADJUSTED)
     {
-#ifdef _DEBUG
-        int temp1 = offspring->population[random1 % TOTALGENELENGTH];
-        // int temp1 = offspring->population[random1 % gpuEvoPrms.CHROMOSOME];
-#endif // _DEBUG
-        offspring->population[random1 % TOTALGENELENGTH] ^= 1;
+// #ifdef _DEBUG
+//         int temp1 = offspring->population[random1 % TOTALGENELENGTH];
+//         // int temp1 = offspring->population[random1 % gpuEvoPrms.CHROMOSOME];
+// #endif // _DEBUG
+
+        // mutationさせる親を選択→親の中でmutationさせる。この際に０で埋められた領域は使わない
+        popidx  = random1 % offspring->populationSize;
+        geneidx = (random1 + random2) % gpuEvoPrms.CHROMOSOME_ACTUAL;
+        offset  = popidx * gpuEvoPrms.CHROMOSOME_PSEUDO;
+        offspring->population[offset + geneidx] ^= 1;
+        // printf("%d,%d,%d,%d\n", popidx, geneidx, offset, popidx + geneidx); 
+
+        // offspring->population[random1 % TOTALGENELENGTH] ^= 1;
         // offspring->population[random1 % gpuEvoPrms.CHROMOSOME] ^= 1;
-#ifdef _DEBUG
-        int temp2 = offspring->population[random1 % TOTALGENELENGTH];
-        // int temp2 = offspring->population[random1 % gpuEvoPrms.CHROMOSOME];
-        printf("mutation: rand1 <rnd>%d:<rng>%f:<IDX>%d:<before>%d:<after>%d\n",
-                random1, r123::u01fixedpt<float>(random1), random1 % TOTALGENELENGTH, temp1, temp2);
-#endif // _DEBUG
+
+// #ifdef _DEBUG
+//         int temp2 = offspring->population[random1 % TOTALGENELENGTH];
+//         // int temp2 = offspring->population[random1 % gpuEvoPrms.CHROMOSOME];
+//         printf("mutation: rand1 <rnd>%d:<rng>%f:<IDX>%d:<before>%d:<after>%d\n",
+//                 random1, r123::u01fixedpt<float>(random1), random1 % TOTALGENELENGTH, temp1, temp2);
+// #endif // _DEBUG
+
     }
     if (r123::u01fixedpt<float>(random2) < MUTATION_RATE_ADJUSTED)
     {
-#ifdef _DEBUG
-        int temp1 = offspring->population[random1 % TOTALGENELENGTH];
-        // int temp1 = offspring->population[random1 % gpuEvoPrms.CHROMOSOME];
-#endif // _DEBUG
-        offspring->population[random2 % TOTALGENELENGTH] ^= 1;
+// #ifdef _DEBUG
+//         int temp1 = offspring->population[random1 % TOTALGENELENGTH];
+//         // int temp1 = offspring->population[random1 % gpuEvoPrms.CHROMOSOME];
+// #endif // _DEBUG
+
+        // mutationさせる親を選択→親の中でmutationさせる。この際に０で埋められた領域は使わない
+        popidx  = random2 % offspring->populationSize;
+        geneidx = (random2 + random3) % gpuEvoPrms.CHROMOSOME_ACTUAL;
+        offset  = popidx * gpuEvoPrms.CHROMOSOME_PSEUDO;
+        offspring->population[offset + geneidx] ^= 1;
+        // printf("%d,%d,%d,%d\n", popidx, geneidx, offset, popidx + geneidx); 
+
+        // offspring->population[random2 % TOTALGENELENGTH] ^= 1;
         // offspring->population[random2 % gpuEvoPrms.CHROMOSOME] ^= 1;
-#ifdef _DEBUG
-        int temp2 = offspring->population[random1 % TOTALGENELENGTH];
-        printf("mutation: rand1 <rnd>%d:<rng>%f:<IDX>%d:<before>%d:<after>%d\n",
-                random1, r123::u01fixedpt<float>(random1), random1 % TOTALGENELENGTH, temp1, temp2);
-#endif // _DEBUG
+// #ifdef _DEBUG
+//         int temp2 = offspring->population[random1 % TOTALGENELENGTH];
+//         printf("mutation: rand1 <rnd>%d:<rng>%f:<IDX>%d:<before>%d:<after>%d\n",
+//                 random1, r123::u01fixedpt<float>(random1), random1 % TOTALGENELENGTH, temp1, temp2);
+// #endif // _DEBUG
     }
     if (r123::u01fixedpt<float>(random3) < MUTATION_RATE_ADJUSTED)
     {
-#ifdef _DEBUG
-        int temp1 = offspring->population[random1 % TOTALGENELENGTH];
-        // int temp1 = offspring->population[random1 % gpuEvoPrms.CHROMOSOME];
-#endif // _DEBUG
-        offspring->population[random3 % TOTALGENELENGTH] ^= 1;
+// #ifdef _DEBUG
+//         int temp1 = offspring->population[random1 % TOTALGENELENGTH];
+//         // int temp1 = offspring->population[random1 % gpuEvoPrms.CHROMOSOME];
+// #endif // _DEBUG
+
+        // mutationさせる親を選択→親の中でmutationさせる。この際に０で埋められた領域は使わない
+        popidx  = random3 % offspring->populationSize;
+        geneidx = (random3 + random4) % gpuEvoPrms.CHROMOSOME_ACTUAL;
+        offset  = popidx * gpuEvoPrms.CHROMOSOME_PSEUDO;
+        offspring->population[offset + geneidx] ^= 1;
+        // printf("%d,%d,%d,%d\n", popidx, geneidx, offset, popidx + geneidx); 
+
+        // offspring->population[random3 % TOTALGENELENGTH] ^= 1;
         // offspring->population[random3 % gpuEvoPrms.CHROMOSOME] ^= 1;
-#ifdef _DEBUG
-        int temp2 = offspring->population[random1 % TOTALGENELENGTH];
-        // int temp2 = offspring->population[random1 % gpuEvoPrms.CHROMOSOME];
-        printf("mutation: rand1 <rnd>%d:<rng>%f:<IDX>%d:<before>%d:<after>%d\n",
-                random1, r123::u01fixedpt<float>(random1), random1 % TOTALGENELENGTH, temp1, temp2);
-#endif // _DEBUG
+
+// #ifdef _DEBUG
+//         int temp2 = offspring->population[random1 % TOTALGENELENGTH];
+//         // int temp2 = offspring->population[random1 % gpuEvoPrms.CHROMOSOME];
+//         printf("mutation: rand1 <rnd>%d:<rng>%f:<IDX>%d:<before>%d:<after>%d\n",
+//                 random1, r123::u01fixedpt<float>(random1), random1 % TOTALGENELENGTH, temp1, temp2);
+// #endif // _DEBUG
     }
     if (r123::u01fixedpt<float>(random4) < MUTATION_RATE_ADJUSTED)
     {
-#ifdef _DEBUG
-        int temp1 = offspring->population[random4 % TOTALGENELENGTH];
-        // int temp1 = offspring->population[random1 % gpuEvoPrms.CHROMOSOME];
-#endif // _DEBUG
-        offspring->population[random4 % TOTALGENELENGTH] ^= 1;
-        // offspring->population[random4 % gpuEvoPrms.CHROMOSOME] ^= 1;
-#ifdef _DEBUG
-        int temp2 = offspring->population[random4 % TOTALGENELENGTH];
-        // int temp2 = offspring->population[random1 % gpuEvoPrms.CHROMOSOME];
-        printf("mutation: rand1 <rnd>%d:<rng>%f:<IDX>%d:<before>%d:<after>%d\n",
-                random1, r123::u01fixedpt<float>(random4), random4 % TOTALGENELENGTH, temp1, temp2);
-#endif // _DEBUG
+// #ifdef _DEBUG
+//         int temp1 = offspring->population[random4 % TOTALGENELENGTH];
+//         // int temp1 = offspring->population[random1 % gpuEvoPrms.CHROMOSOME];
+// #endif // _DEBUG
+
+        // offspring->population[random4 % TOTALGENELENGTH] ^= 1;
+        // mutationさせる親を選択→親の中でmutationさせる。この際に０で埋められた領域は使わない
+        popidx  = random4 % offspring->populationSize;
+        geneidx = (random4 + random1) % gpuEvoPrms.CHROMOSOME_ACTUAL;
+        offset  = popidx * gpuEvoPrms.CHROMOSOME_PSEUDO;
+        offspring->population[offset + geneidx] ^= 1;
+        // printf("%d,%d,%d,%d\n", popidx, geneidx, offset, popidx + geneidx); 
+
+        // offspring->population[random3 % TOTALGENELENGTH] ^= 1;
+        // offspring->population[random3 % gpuEvoPrms.CHROMOSOME] ^= 1;
+
+// #ifdef _DEBUG
+//         int temp2 = offspring->population[random1 % TOTALGENELENGTH];
+//         // int temp2 = offspring->population[random1 % gpuEvoPrms.CHROMOSOME];
+//         printf("mutation: rand1 <rnd>%d:<rng>%f:<IDX>%d:<before>%d:<after>%d\n",
+//                 random1, r123::u01fixedpt<float>(random1), random1 % TOTALGENELENGTH, temp1, temp2);
+// #endif // _DEBUG
     }
 }
-

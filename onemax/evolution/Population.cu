@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <cuda_device_runtime_api.h>
 #include <stdexcept>
 #include <algorithm>
 #include <numeric>
@@ -188,7 +189,8 @@ void GPUPopulation::allocateMemory()
 
     //- Allocate Population data
     checkCudaErrors(cudaMalloc<Gene>(&(mHostPopulationHandler.population),
-                                       sizeof(Gene) * mHostPopulationHandler.chromosomeSize * mHostPopulationHandler.populationSize));
+                                       sizeof(Gene) * mHostPopulationHandler.chromosomeSize
+                                                    * mHostPopulationHandler.populationSize));
 
     //- Allocate Fitness data
     checkCudaErrors(cudaMalloc<Fitness>(&(mHostPopulationHandler.fitness),

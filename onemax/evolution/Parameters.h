@@ -19,14 +19,17 @@ constexpr int WARP_SIZE  = 32;
 typedef struct
 {
     int POPSIZE;
-    int CHROMOSOME;
+    int CHROMOSOME_ACTUAL;
+    int CHROMOSOME_PSEUDO;
     int NUM_OF_GENERATIONS;
     int NUM_OF_ELITE;
     int TOURNAMENT_SIZE;
     int NUM_OF_CROSSOVER_POINTS;
     float MUTATION_RATE;
-    int N;
-    int Nbytes;
+    int N_ACTUAL;
+    int N_PSEUDO;
+    int Nbytes_ACTUAL;
+    int Nbytes_PSEUDO;
 } EvolutionParameters;
 
 /**
@@ -44,14 +47,17 @@ public:
 
     void loadParams(void);
     int getPopsize(void) const;
-    int getChromosome(void) const;
+    int getChromosomeActual(void) const;
+    int getChromosomePseudo(void) const;
     int getNumOfGenerations(void) const;
     int getNumOfElite(void) const;
     int getTournamentSize(void) const;
     int getNumOfCrossoverPoints(void) const;
     float getMutationRate(void) const;
-    int getN(void) const;
-    int getNbytes(void) const;
+    int getNActual(void) const;
+    int getNPseudo(void) const;
+    int getNbytesActual(void) const;
+    int getNbytesPseudo(void) const;
     EvolutionParameters getEvoPrms(void) const;
     void copyToDevice();
     void showParams() const;
