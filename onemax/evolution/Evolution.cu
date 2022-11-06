@@ -21,7 +21,7 @@ GPUEvolution::GPUEvolution(Parameters* prms)
     : mRandomSeed(0),
       mDeviceIdx(0)
 {
-    printf("constructor\n");
+    // printf("constructor\n");
     //- Select device
     // cudaSetDevice(mDeviceIdx);
     // checkAndReportCudaError(__FILE__, __LINE__);
@@ -71,7 +71,7 @@ GPUEvolution::GPUEvolution(Parameters* prms)
 
     // Initialize Random seed
     initRandomSeed();
-    printf("end of constructor\n");
+    // printf("end of constructor\n");
 }; // end of GPUEvolution
 
 
@@ -101,22 +101,22 @@ void GPUEvolution::run(Parameters* prms)
     cudaEventCreate(&end);
 
     std::uint16_t generation = 0;
-    printf("### Initialize\n");
+    // printf("### Initialize\n");
     initialize(prms);
     // showPopulation(prms, generation);
 
     // 実行時間測定開始
     cudaEventRecord(start, 0);
-    printf("### EvoCycle\n");
+    // printf("### EvoCycle\n");
     for (generation = 0; generation < prms->getNumOfGenerations(); ++generation)
     {
         // printf("### Number of Generations : %d ###\n", generation);
         // printf("### Generations: %d\n", generation);
         runEvolutionCycle(prms);
-        showPopulation(prms, generation);
+        // showPopulation(prms, generation);
     }
-    printf("End of EvoCycle\n");
-    showPopulation(prms, generation);
+    // printf("End of EvoCycle\n");
+    // showPopulation(prms, generation);
 
     cudaEventRecord(end, 0);
     cudaEventSynchronize(end);

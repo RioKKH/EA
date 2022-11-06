@@ -4,7 +4,8 @@ readonly CWD=$(pwd)
 readonly PARAMSFILE=${CWD}/onemax.prms
 
 readonly POPULATION=$(seq 32 32 1024)
-readonly CHROMOSOME="32 64 128 256 512 1024"
+readonly CHROMOSOME=$(seq 32 32 1024)
+#readonly CHROMOSOME="32 64 128 256 512 1024"
 readonly DATETIME=$(date +%Y%m%d-%H%M%S)
 readonly BACKUPFILE=${CWD}/result_${DATETIME}.csv
 

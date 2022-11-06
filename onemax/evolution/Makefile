@@ -15,7 +15,8 @@ NVCC = nvcc
 #               --generate-code arch=compute_86,code=sm_86
 NVCC_OPTIONS = --generate-code arch=compute_75,code=sm_75
 
-CPPFLAGS=-O3 -Xptxas=-v
+CPPFLAGS=-O3
+#CPPFLAGS=-O3 -Xptxas=-v
 CPPINCLUDE=-I./Common
 #CPPINCLUDE=-I./Common  -I/usr/include/c++/9/
 CFLAGS=
@@ -31,26 +32,26 @@ all: ${APPS}
 build: ${APPS}
 
 CUDAKernels.o: CUDAKernels.cu
-	${NVCC} ${NVCC_OPTIONS} ${debug} ${CPPINCLUDE} -o $@ -c $<
+	${NVCC} ${NVCC_OPTIONS} ${debug} ${CPPINCLUDE} ${CPPFLAGS} -o $@ -c $<
 
 Evolution.o: Evolution.cu
-	${NVCC} ${NVCC_OPTIONS} ${debug} ${CPPINCLUDE} -o $@ -c $<
+	${NVCC} ${NVCC_OPTIONS} ${debug} ${CPPINCLUDE} ${CPPFLAGS} -o $@ -c $<
 
 Parameters.o: Parameters.cu
-	${NVCC} ${NVCC_OPTIONS} ${debug} ${CPPINCLUDE} -o $@ -c $<
+	${NVCC} ${NVCC_OPTIONS} ${debug} ${CPPINCLUDE} ${CPPFLAGS} -o $@ -c $<
 
 Population.o: Population.cu
-	${NVCC} ${NVCC_OPTIONS} ${debug} ${CPPINCLUDE} -o $@ -c $<
+	${NVCC} ${NVCC_OPTIONS} ${debug} ${CPPINCLUDE} ${CPPFLAGS} -o $@ -c $<
  
 #
 #%.o : $.cu
 #	${NVCC} ${CPPINCLUDE} ${debug} ${CPPINCLUDE} ${NVCC_OPTIONS} -c $<
 
 main.o: main.cpp
-	${CPP} ${CFLAGS} ${debug} ${CPPINCLUDE} -c main.cpp
+	${CPP} ${CFLAGS} ${debug} ${CPPINCLUDE} ${CPPFLAGS} -c main.cpp
 
 gpuonemax: main.o CUDAKernels.o Evolution.o Parameters.o Population.o
-	${NVCC} ${LDFLAGS} ${NVCC_OPTIONS} ${debug} ${CPPINCLUDE} $^ -o $@
+	${NVCC} ${LDFLAGS} ${NVCC_OPTIONS} ${debug} ${CPPINCLUDE} ${CPPFLAGS} $^ -o $@
 
 clean:
 	rm -f ${APPS}
