@@ -13,9 +13,11 @@ NVCC = nvcc
 #							 --generate-code arch=compute_75,code=sm_75 \
 #							 --generate-code arch=compute_80,code=sm_80 \
 #               --generate-code arch=compute_86,code=sm_86
-NVCC_OPTIONS = --generate-code arch=compute_75,code=sm_75
+NVCC_OPTIONS = --generate-code arch=compute_75,code=sm_75 \
+               --generate-code arch=compute_80,code=sm_80 \
+               --generate-code arch=compute_86,code=sm_86
 
-CPPFLAGS=-O3 -Xptxas=-v
+#CPPFLAGS=-O3 -Xptxas=-v
 CPPINCLUDE=-I./Common
 #CPPINCLUDE=-I./Common  -I/usr/include/c++/9/
 CFLAGS=
