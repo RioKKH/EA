@@ -291,15 +291,15 @@ void GPUEvolution::runEvolutionCycle(Parameters* prms)
 #ifdef _DEBUG
     printf("Copy population from offspring to parent, then insert elites in it.\n");
 #endif // _DEBUG
-    // blocks.x = 1; // gridDim.x
-    blocks.x = CHR_PER_BLOCK; // gridDim.x
+    blocks.x = 1; // gridDim.x
+    // blocks.x = CHR_PER_BLOCK; // gridDim.x
     blocks.y = 1;
     blocks.z = 1;
 
     // threads.x = 1; // blockDim.x
-    // threads.x = prms->getPopsize();
+    threads.x = prms->getPopsize();
     // threads.x = 1;
-    threads.x = prms->getPopsize() / CHR_PER_BLOCK; // blockDim.x
+    // threads.x = prms->getPopsize() / CHR_PER_BLOCK; // blockDim.x
     threads.y = 1;
     threads.z = 1;
 

@@ -123,10 +123,12 @@ __global__ void pseudo_elitism(PopulationData* populationData)
     int numOfEliteIdx     = blockIdx.x;  // size of NUM_OF_ELITE x 2
     int localFitnessIdx   = threadIdx.x; // size of POPULATION / NUM_OF_ELITE
     int globalFitnessIdx  = threadIdx.x + blockIdx.x * blockDim.x; // size of POPULATION x 2
-    const int OFFSET      = blockDim.x;
+    const int OFFSET      = blockDim.x;  // size of POPULATION / NUM_OF_ELITE
 
     extern __shared__ volatile int s_fitness[];
 
+    // shared memoryにデータを読み込み
+    // ブロック数はElite数の２倍。
     s_fitness[localFitnessIdx]          = populationData->fitness[globalFitnessIdx];
     s_fitness[localFitnessIdx + OFFSET] = globalFitnessIdx; 
     __syncthreads();
@@ -152,16 +154,19 @@ __global__ void pseudo_elitism(PopulationData* populationData)
     }
 }
 
-__global__ void insertElites()
+__global__ void replaceWithElites(PopulationData *parentPopulation,
+                             PopulationData *offspringPopulation)
 {
+    std::uint32_t tx  = threadIdx.x;
+    std::uint32_t idx = blockDim.x * blockIdx.x + threadIdx.x;
+    std::uint32_t OFFSET = gpuEvoPrms.CHROMOSOME_PSEUDO * threadIdx.x;
+    const std::uint32_t POP_PER_THR = gpuEvoPrms.POPSIZE / blockDim.x;
+
     if (idx % (gpuEvoPrms.POPSIZE / gpuEvoPrms.NUM_OF_ELITE) == 0)
     {
         std::uint32_t ELITE_INDEX  = idx / (gpuEvoPrms.POPSIZE / gpuEvoPrms.NUM_OF_ELITE);
         std::uint32_t ELITE_OFFSET = gpuEvoPrms.CHROMOSOME_PSEUDO * parentPopulation->elitesIdx[ELITE_INDEX]; 
         // std::uint32_t ELITE_OFFSET = gpuEvoPrms.CHROMOSOME_ACTUAL * parentPopulation->elitesIdx[ELITE_INDEX]; 
-#ifdef _DEBUG
-        printf("swap target:%d, src eindex:%d, src eoffset:%d\n", idx, ELITE_INDEX, ELITE_OFFSET);
-#endif // _DEBUG
         //- エリートの遺伝子を子にコピーする
         for (int i = 0; i < gpuEvoPrms.CHROMOSOME_PSEUDO; ++i)
         // for (int i = 0; i < gpuEvoPrms.CHROMOSOME_ACTUAL; ++i)
@@ -173,6 +178,9 @@ __global__ void insertElites()
             = parentPopulation->fitness[parentPopulation->elitesIdx[ELITE_INDEX]];
     }
 }
+// #ifdef _DEBUG
+//         printf("swap target:%d, src eindex:%d, src eoffset:%d\n", idx, ELITE_INDEX, ELITE_OFFSET);
+// #endif // _DEBUG
 
 __global__ void swapPopulation(PopulationData* parentPopulation,
                                PopulationData* offspringPopulation)
@@ -186,13 +194,6 @@ __global__ void swapPopulation(PopulationData* parentPopulation,
     const std::uint32_t POP_PER_THR = gpuEvoPrms.POPSIZE / blockDim.x;
     // printf("swapPopulation: %d, %d\n", OFFSET, idx);
 
-    PopulationData *temp;
-    temp = parentPopulation;
-    parentPopulation = offspringPopulation;
-    offspringPopulation = temp;
-
-
-    /*
     //- In case  of <<<1, 1>>>
     if (idx < gpuEvoPrms.CHROMOSOME * gpuEvoPrms.POPSIZE)
     {
@@ -202,9 +203,7 @@ __global__ void swapPopulation(PopulationData* parentPopulation,
         }
     }
     __syncthreads();
-    */
 
-    /*
 
     //- In case of <<<N, M>>>
     if (idx < gpuEvoPrms.CHROMOSOME_PSEUDO * gpuEvoPrms.POPSIZE)
@@ -251,7 +250,6 @@ __global__ void swapPopulation(PopulationData* parentPopulation,
         }
     }
     __syncthreads();
-    */
 }
 
 
