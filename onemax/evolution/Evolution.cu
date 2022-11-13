@@ -113,7 +113,7 @@ void GPUEvolution::run(Parameters* prms)
         // printf("### Number of Generations : %d ###\n", generation);
         // printf("### Generations: %d\n", generation);
         runEvolutionCycle(prms);
-        // showPopulation(prms, generation);
+        showPopulation(prms, generation);
     }
     // printf("End of EvoCycle\n");
     // showPopulation(prms, generation);
@@ -185,7 +185,9 @@ void GPUEvolution::initialize(Parameters* prms)
 
 
     //- 疑似エリート保存戦略 ----------------------------------------------------------------------
-    blocks.x  = prms->getNumOfElite() * 2;
+    // blocks.x  = prms->getNumOfElite();
+    blocks.x  = prms->getNumOfElite(); // 2022/11/13 x2する必要ないのでは？ --> x2はしないことにした。
+    // blocks.x  = prms->getNumOfElite() * 2; // 2022/11/13 x2する必要ないのでは？
     blocks.y  = 1;
     blocks.z  = 1;
 

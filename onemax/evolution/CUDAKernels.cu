@@ -120,7 +120,7 @@ __global__ void evaluation(PopulationData* populationData)
 
 __global__ void pseudo_elitism(PopulationData* populationData)
 {
-    int numOfEliteIdx     = blockIdx.x;  // size of NUM_OF_ELITE x 2
+    int numOfEliteIdx     = blockIdx.x;  // size of NUM_OF_ELITE
     int localFitnessIdx   = threadIdx.x; // size of POPULATION / NUM_OF_ELITE
     int globalFitnessIdx  = threadIdx.x + blockIdx.x * blockDim.x; // size of POPULATION x 2
     const int OFFSET      = blockDim.x;
@@ -143,7 +143,9 @@ __global__ void pseudo_elitism(PopulationData* populationData)
         __syncthreads();
     }
 
-    if (localFitnessIdx == 0 && blockIdx.x < gridDim.x/2)
+    // Evolution.cuでx2していなければ、ここで1/2する必要もないのでは？
+    // if (localFitnessIdx == 0 && blockIdx.x < gridDim.x/2) // 2022/11/13 --> 1/2はしないことにした
+    if (localFitnessIdx == 0 && blockIdx.x < gridDim.x)
     {
         populationData->elitesIdx[numOfEliteIdx] = s_fitness[localFitnessIdx + OFFSET];
 #ifdef _DEBUG
