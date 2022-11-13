@@ -163,6 +163,11 @@ __global__ void swapPopulation(PopulationData* parentPopulation,
     // std::uint32_t OFFSET = gpuEvoPrms.CHROMOSOME_ACTUAL * threadIdx.x;
     const std::uint32_t POP_PER_THR = gpuEvoPrms.POPSIZE / blockDim.x;
     // printf("swapPopulation: %d, %d\n", OFFSET, idx);
+    // PopulationData *temp;
+    // temp = parentPopulation;
+    // parentPopulation = offspringPopulation;
+    // offspringPopulation = temp;
+
 
     /*
     //- In case  of <<<1, 1>>>

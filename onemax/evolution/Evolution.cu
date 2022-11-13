@@ -103,7 +103,7 @@ void GPUEvolution::run(Parameters* prms)
     std::uint16_t generation = 0;
     // printf("### Initialize\n");
     initialize(prms);
-    // showPopulation(prms, generation);
+    showPopulation(prms, generation);
 
     // 実行時間測定開始
     cudaEventRecord(start, 0);
@@ -115,8 +115,8 @@ void GPUEvolution::run(Parameters* prms)
         runEvolutionCycle(prms);
         // showPopulation(prms, generation);
     }
-    // printf("End of EvoCycle\n");
-    // showPopulation(prms, generation);
+    printf("End of EvoCycle\n");
+    showPopulation(prms, generation);
 
     cudaEventRecord(end, 0);
     cudaEventSynchronize(end);
@@ -300,8 +300,13 @@ void GPUEvolution::runEvolutionCycle(Parameters* prms)
     // threads.x = prms->getPopsize() / CHR_PER_BLOCK; // blockDim.x
     threads.y = 1;
     threads.z = 1;
-    swapPopulation<<<blocks, threads>>>(mDevParentPopulation->getDeviceData(),
-                                        mDevOffspringPopulation->getDeviceData());
+
+    GPUPopulation *temp;
+    temp = mDevParentPopulation;
+    mDevParentPopulation = mDevOffspringPopulation;
+    mDevOffspringPopulation = temp;
+    // swapPopulation<<<blocks, threads>>>(mDevParentPopulation->getDeviceData(),
+    //                                     mDevOffspringPopulation->getDeviceData());
     checkAndReportCudaError(__FILE__, __LINE__);
 }
 
