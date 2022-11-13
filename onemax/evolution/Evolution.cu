@@ -185,7 +185,8 @@ void GPUEvolution::initialize(Parameters* prms)
 
 
     //- 疑似エリート保存戦略 ----------------------------------------------------------------------
-    blocks.x  = prms->getNumOfElite() * 2;
+    blocks.x  = prms->getNumOfElite();
+    // blocks.x  = prms->getNumOfElite() * 2;
     blocks.y  = 1;
     blocks.z  = 1;
 

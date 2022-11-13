@@ -145,7 +145,8 @@ __global__ void pseudo_elitism(PopulationData* populationData)
         __syncthreads();
     }
 
-    if (localFitnessIdx == 0 && blockIdx.x < gridDim.x/2)
+    // if (localFitnessIdx == 0 && blockIdx.x < gridDim.x/2)
+    if (localFitnessIdx == 0 && blockIdx.x < gridDim.x)
     {
         populationData->elitesIdx[numOfEliteIdx] = s_fitness[localFitnessIdx + OFFSET];
 #ifdef _DEBUG
@@ -195,9 +196,9 @@ __global__ void swapPopulation(PopulationData* parentPopulation,
     // printf("swapPopulation: %d, %d\n", OFFSET, idx);
 
     //- In case  of <<<1, 1>>>
-    if (idx < gpuEvoPrms.CHROMOSOME * gpuEvoPrms.POPSIZE)
+    if (idx < gpuEvoPrms.CHROMOSOME_PSEUDO * gpuEvoPrms.POPSIZE)
     {
-        for (int i = 0; i < gpuEvoPrms.CHROMOSOME * gpuEvoPrms.POPSIZE; ++i)
+        for (int i = 0; i < gpuEvoPrms.CHROMOSOME_PSEUDO * gpuEvoPrms.POPSIZE; ++i)
         {
             parentPopulation->population[i] = offspringPopulation->population[i];
         }
