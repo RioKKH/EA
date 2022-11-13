@@ -103,7 +103,7 @@ void GPUEvolution::run(Parameters* prms)
     std::uint16_t generation = 0;
     // printf("### Initialize\n");
     initialize(prms);
-    showPopulation(prms, generation);
+    // showPopulation(prms, generation);
 
     // 実行時間測定開始
     cudaEventRecord(start, 0);
@@ -116,7 +116,7 @@ void GPUEvolution::run(Parameters* prms)
         showPopulation(prms, generation);
     }
     printf("End of EvoCycle\n");
-    showPopulation(prms, generation);
+    // showPopulation(prms, generation);
 
     cudaEventRecord(end, 0);
     cudaEventSynchronize(end);
@@ -215,6 +215,7 @@ void GPUEvolution::runEvolutionCycle(Parameters* prms)
 {
     dim3 blocks;
     dim3 threads;
+    GPUPopulation *temp;
 
     //- Selection, Crossover, and Mutation ---------------------------------------------------------
     int CHR_PER_BLOCK = (prms->getPopsize() % WARP_SIZE == 0)
@@ -290,23 +291,23 @@ void GPUEvolution::runEvolutionCycle(Parameters* prms)
 #ifdef _DEBUG
     printf("Copy population from offspring to parent, then insert elites in it.\n");
 #endif // _DEBUG
-    blocks.x = 1; // gridDim.x
-    // blocks.x = CHR_PER_BLOCK; // gridDim.x
+    // blocks.x = 1; // gridDim.x
+    blocks.x = CHR_PER_BLOCK; // gridDim.x
     blocks.y = 1;
     blocks.z = 1;
 
     // threads.x = 1; // blockDim.x
-    threads.x = prms->getPopsize();
-    // threads.x = prms->getPopsize() / CHR_PER_BLOCK; // blockDim.x
+    // threads.x = prms->getPopsize();
+    // threads.x = 1;
+    threads.x = prms->getPopsize() / CHR_PER_BLOCK; // blockDim.x
     threads.y = 1;
     threads.z = 1;
 
-    GPUPopulation *temp;
     temp = mDevParentPopulation;
     mDevParentPopulation = mDevOffspringPopulation;
     mDevOffspringPopulation = temp;
     // swapPopulation<<<blocks, threads>>>(mDevParentPopulation->getDeviceData(),
-    //                                     mDevOffspringPopulation->getDeviceData());
+    //                                    mDevOffspringPopulation->getDeviceData());
     checkAndReportCudaError(__FILE__, __LINE__);
 }
 

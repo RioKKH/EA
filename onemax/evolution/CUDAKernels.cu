@@ -152,6 +152,28 @@ __global__ void pseudo_elitism(PopulationData* populationData)
     }
 }
 
+__global__ void insertElites()
+{
+    if (idx % (gpuEvoPrms.POPSIZE / gpuEvoPrms.NUM_OF_ELITE) == 0)
+    {
+        std::uint32_t ELITE_INDEX  = idx / (gpuEvoPrms.POPSIZE / gpuEvoPrms.NUM_OF_ELITE);
+        std::uint32_t ELITE_OFFSET = gpuEvoPrms.CHROMOSOME_PSEUDO * parentPopulation->elitesIdx[ELITE_INDEX]; 
+        // std::uint32_t ELITE_OFFSET = gpuEvoPrms.CHROMOSOME_ACTUAL * parentPopulation->elitesIdx[ELITE_INDEX]; 
+#ifdef _DEBUG
+        printf("swap target:%d, src eindex:%d, src eoffset:%d\n", idx, ELITE_INDEX, ELITE_OFFSET);
+#endif // _DEBUG
+        //- エリートの遺伝子を子にコピーする
+        for (int i = 0; i < gpuEvoPrms.CHROMOSOME_PSEUDO; ++i)
+        // for (int i = 0; i < gpuEvoPrms.CHROMOSOME_ACTUAL; ++i)
+        {
+            offspringPopulation->population[OFFSET + i] = parentPopulation->population[ELITE_OFFSET + i];
+        }
+        //- エリートのFitnessをコピーする
+        offspringPopulation->fitness[idx]
+            = parentPopulation->fitness[parentPopulation->elitesIdx[ELITE_INDEX]];
+    }
+}
+
 __global__ void swapPopulation(PopulationData* parentPopulation,
                                PopulationData* offspringPopulation)
 {
@@ -163,10 +185,11 @@ __global__ void swapPopulation(PopulationData* parentPopulation,
     // std::uint32_t OFFSET = gpuEvoPrms.CHROMOSOME_ACTUAL * threadIdx.x;
     const std::uint32_t POP_PER_THR = gpuEvoPrms.POPSIZE / blockDim.x;
     // printf("swapPopulation: %d, %d\n", OFFSET, idx);
-    // PopulationData *temp;
-    // temp = parentPopulation;
-    // parentPopulation = offspringPopulation;
-    // offspringPopulation = temp;
+
+    PopulationData *temp;
+    temp = parentPopulation;
+    parentPopulation = offspringPopulation;
+    offspringPopulation = temp;
 
 
     /*
@@ -180,6 +203,8 @@ __global__ void swapPopulation(PopulationData* parentPopulation,
     }
     __syncthreads();
     */
+
+    /*
 
     //- In case of <<<N, M>>>
     if (idx < gpuEvoPrms.CHROMOSOME_PSEUDO * gpuEvoPrms.POPSIZE)
@@ -226,6 +251,7 @@ __global__ void swapPopulation(PopulationData* parentPopulation,
         }
     }
     __syncthreads();
+    */
 }
 
 
