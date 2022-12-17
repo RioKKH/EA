@@ -155,8 +155,7 @@ __global__ void pseudo_elitism(PopulationData* populationData)
     }
 }
 
-__global__ void replaceWithElites(PopulationData *parentPopulation,
-                             PopulationData *offspringPopulation)
+__global__ void replaceWithElites(PopulationData *parentPopulation, PopulationData *offspringPopulation)
 {
     std::uint32_t tx  = threadIdx.x;
     std::uint32_t idx = blockDim.x * blockIdx.x + threadIdx.x;
@@ -178,6 +177,7 @@ __global__ void replaceWithElites(PopulationData *parentPopulation,
         offspringPopulation->fitness[idx]
             = parentPopulation->fitness[parentPopulation->elitesIdx[ELITE_INDEX]];
     }
+    __syncthreads();
 }
 // #ifdef _DEBUG
 //         printf("swap target:%d, src eindex:%d, src eoffset:%d\n", idx, ELITE_INDEX, ELITE_OFFSET);

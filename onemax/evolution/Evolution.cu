@@ -269,7 +269,8 @@ void GPUEvolution::runEvolutionCycle(Parameters* prms)
 
 
     //- 疑似エリート保存戦略 -----------------------------------------------------------------------
-    blocks.x  = prms->getNumOfElite() * 2;
+    blocks.x  = prms->getNumOfElite();
+    // blocks.x  = prms->getNumOfElite() * 2;
     blocks.y  = 1;
     blocks.z  = 1;
 
@@ -304,9 +305,14 @@ void GPUEvolution::runEvolutionCycle(Parameters* prms)
     threads.y = 1;
     threads.z = 1;
 
+    // swap population between parents and offsprings
     temp = mDevParentPopulation;
     mDevParentPopulation = mDevOffspringPopulation;
     mDevOffspringPopulation = temp;
+
+    replaceWithElites(mDevParentPopulation->getDeviceData(),
+                      mDevOffspringPopulation->getDeviceData())
+
     // swapPopulation<<<blocks, threads>>>(mDevParentPopulation->getDeviceData(),
     //                                    mDevOffspringPopulation->getDeviceData());
     checkAndReportCudaError(__FILE__, __LINE__);
