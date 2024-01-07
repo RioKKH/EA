@@ -52,6 +52,14 @@ void population::evaluate()
         ind[i]->evaluate();
     }
     sort(0, pop_size - 1);
+    // 20231224 sort(0, pop_size - 1);
+/*
+#ifdef _DEBUG
+    for (int i = 0; i < pop_size; i++) {
+        printf("%d:%d\n ", i, ind[i]->fitness);
+    }
+#endif // _DEBUG
+*/
 }
 
 /**
@@ -99,7 +107,7 @@ void population::sort(int lb, int ub)
 void population::alternate()
 {
     static int generation = 0;
-    int i, j, p1, p2;
+    int i, j, p1, p2, ii;
     individual **tmp;
 
     // printf("initialize tr_fit\n");
@@ -114,9 +122,9 @@ void population::alternate()
     */
     // evaluate
     // printf("evaluate\n");
-    // evaluate();
+    evaluate();
 
-    /*
+#ifdef _DEBUG_FITNESS
     printf("print fitness value\n");
     for (i = 0; i < pop_size; i++) {
         printf("index %d: fitness: %d: ", i, ind[i]->fitness);
@@ -125,42 +133,58 @@ void population::alternate()
         }
         printf("\n");
     }
-    */
+#endif // _DEBUG_FITNESS
 
     // Apply elitism and pick up elites for next generation
     // printf("Elitism\n");
     for (i = 0; i < elite; i++) {
         for (j = 0; j < N; j++) {
-        // for (j = 0; j < N; j++) {
-            next_ind[i]->chromosome[N - j] = ind[i]->chromosome[N - j];
+            next_ind[i]->chromosome[j] = ind[pop_size - i - 1]->chromosome[j];
+            next_ind[i]->fitness       = ind[pop_size - i - 1]->fitness;
+            // ソートした結果、Fitnessは添え字が小さいほうに小さい値が入っている為、
+            // pop_size - i - 1で添え字を指定する
         }
     }
+#ifdef _DEBUG_ELITE
+    printf("print Elites\n");
+    for (ii = 0; ii < elite; ii++) {
+        printf("e%d:%d: ", ii, next_ind[ii]->fitness);
+        for (j = 0; j < N; j++) {
+            printf("%d", next_ind[ii]->chromosome[j]);
+        }
+        printf("\n");
+    }
+#endif // _DEBUG_ELITE
 
     //- select parents and do the crossover
     for (; i < pop_size; i++) {
+    // for (i = 0; i < pop_size; i++) {
         p1 = select_by_tournament();
         p2 = select_by_tournament();
         next_ind[i]->apply_crossover_tp(ind[p1], ind[p2]);
         // next_ind[i]->apply_crossover_sp(ind[p1], ind[p2]);
 
+#ifdef _DEBUG_CHROMOSOME
         // Debug Info
-        /*
-        printf("p1: ");
+        // printf("p1: ");
+        printf("%4d: p1: ", generation);
         for (int j = 0; j < N; j++) {
             printf("%d", ind[p1]->chromosome[j]);
         }
         printf("\n");
-        printf("p2: ");
+        // printf("p2: ");
+        printf("%4d: p2: ", generation);
         for (int j = 0; j < N; j++) {
             printf("%d", ind[p2]->chromosome[j]);
         }
         printf("\n");
-        printf("nx: %d ", i);
+        // printf("nx: %d ", i);
+        printf("%4d: nx: ", generation);
         for (int j = 0; j < N; j++) {
             printf("%d", next_ind[i]->chromosome[j]);
         }
         printf("\n");
-        */
+#endif // _DEBUG_CHROMOSOME
     }
 
     //- Mutate candidate of next generation
@@ -258,6 +282,19 @@ int population::select_by_tournament()
     best_fit = 0; // in case of one-max prob., bigger fitness is better.
     num = 0;
     // printf("enter while loop\n");
+    // 重複を許しているので、確率的には選ばれる個体は少ない
+    while(1) {
+        r = rand() % pop_size;
+        if (ind[r]->fitness > best_fit) {
+            ret = r;
+            best_fit = ind[r]->fitness;
+        }
+        if (++num == tournament_size) {
+            break;
+        }
+    }
+
+    /*
     while(1) {
         r = rand() % pop_size; // ここはPOP_SIZEの剰余でないとおかしいと思う
         // printf("r: %d, tmp[%d]: %d\n", r, r, tmp[r]);
@@ -278,6 +315,8 @@ int population::select_by_tournament()
             }
         }
     }
+    */
+
     delete[] tmp;
     return ret;
 }
