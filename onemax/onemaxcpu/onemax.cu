@@ -17,11 +17,13 @@ int main(int argc, char **argv)
     int pop_size = 0;
     int chromosome = 0;
 
+#ifdef _ELAPSED_TIME
     // 実行時間計測用
     float elapsed_time = 0.0f;
     cudaEvent_t start, end;
     cudaEventCreate(&start);
     cudaEventCreate(&end);
+#endif // _ELAPSED_TIME
 
     Parameters *prms;
     prms = new Parameters();
@@ -30,28 +32,26 @@ int main(int argc, char **argv)
     chromosome = prms->getNumberOfChromosome();
 
     srand((unsigned int)time(NULL));
-    // std::cout << "!!!Start!!!" << std::endl;;
 
     population *pop;
     pop = new population(prms);
 
-    // double iStart = cpuSecond();
+#ifdef _ELAPSED_TIME
     cudaEventRecord(start, 0);
+#endif // _ELAPSED_TIME
     for (int i = 1; i <= gen_max; i++) {
         pop->alternate();
     }
-    // double iElaps = cpuSecond() - iStart;
+#ifdef _ELAPSED_TIME
     cudaEventRecord(end, 0);
     cudaEventSynchronize(end);
     cudaEventElapsedTime(&elapsed_time, start, end);
     std::cout << pop_size << "," << chromosome << "," << elapsed_time << std::endl;
-    // std::cout << pop_size << "," << chromosome << "," << iElaps << std::endl;
-    // pop->print_result();
+#endif // _ELAPSED_TIME
 
     // delete pointers
     delete pop;
     delete prms;
-    // std::cout << "!!!End!!!" << std::endl;
 
     return 0;
 }

@@ -53,13 +53,11 @@ void population::evaluate()
     }
     sort(0, pop_size - 1);
     // 20231224 sort(0, pop_size - 1);
-/*
 #ifdef _DEBUG
     for (int i = 0; i < pop_size; i++) {
         printf("%d:%d\n ", i, ind[i]->fitness);
     }
 #endif // _DEBUG
-*/
 }
 
 /**
@@ -107,7 +105,7 @@ void population::sort(int lb, int ub)
 void population::alternate()
 {
     static int generation = 0;
-    int i, j, p1, p2, ii;
+    int i, j, p1, p2;
     individual **tmp;
 
     // printf("initialize tr_fit\n");
@@ -122,6 +120,7 @@ void population::alternate()
     */
     // evaluate
     // printf("evaluate\n");
+    // evaluate()にsort()が含まれている。
     evaluate();
 
 #ifdef _DEBUG_FITNESS
@@ -147,7 +146,7 @@ void population::alternate()
     }
 #ifdef _DEBUG_ELITE
     printf("print Elites\n");
-    for (ii = 0; ii < elite; ii++) {
+    for (int ii = 0; ii < elite; ii++) {
         printf("e%d:%d: ", ii, next_ind[ii]->fitness);
         for (j = 0; j < N; j++) {
             printf("%d", next_ind[ii]->chromosome[j]);
@@ -219,7 +218,9 @@ void population::alternate()
     stdev = sqrt(var / (pop_size - 1));
 
     // generation, max, min, mean, stdev
-    printf("%d,%f,%d,%d,%f\n", generation, mean, ind[0]->fitness, ind[N-1]->fitness, stdev); 
+    // printf("%d,%f,%d,%f\n", generation, mean, ind[0]->fitness, stdev); 
+    printf("%d,%f,%d,%d,%f\n", 
+            generation, mean, ind[0]->fitness, ind[pop_size-1]->fitness, stdev); 
 #endif // _TREND
 }
 
